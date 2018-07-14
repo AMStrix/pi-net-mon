@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
-import { Route, Switch } from 'react-router-dom';
+import { Route, Switch, Redirect } from 'react-router-dom';
 import { graphql } from 'react-apollo';
 import gql from 'graphql-tag';
 
@@ -41,6 +41,7 @@ class App extends Component {
     let isInstall = 
       !this.props.status.installStatus.hasAdmin || 
       !this.props.status.installStatus.hasBro;
+    let authed = this.props.status.authed;
     return (
       <Wrapper>
         <MenuWrapper>
@@ -48,9 +49,18 @@ class App extends Component {
         </MenuWrapper>
         <ContentWrapper>
           <Switch>
+            <Route 
+              path='/install' 
+              render={p => <Install {...p} {...this.props.status.installStatus} />}  
+            />
+            {isInstall &&  <Redirect to='/install' /> }
+            <Route
+              path='/login'
+              render={() => <div>login</div> }
+            />
+            {!authed && <Redirect to='/login' /> }
             <Route exact path='/' component={Dashboard} />
             <Route path='/devices' component={Devices} />
-            <Route path='/install' component={Install} />
           </Switch>
         </ContentWrapper>
       </Wrapper>
@@ -60,20 +70,6 @@ class App extends Component {
     this.props.status.refetch();
   }
 }
-/*
-        {isInstall && 
-          <Install {...this.props.status.installStatus} 
-            onChange={this.handleInstallChange.bind(this)} 
-          />
-        }
-
-          <MenuWrapper>
-            {!isInstall && <Menu />}
-          </MenuWrapper>
-          <ContentWrapper>
-            {!isInstall && <Devices />}
-          </ContentWrapper>
-*/
 
 const STATUS = gql`
   query Status {

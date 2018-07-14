@@ -54,6 +54,9 @@ module.exports = {
       filename: "./index.html"
     })
   ],
+  output: {
+    publicPath: '/',
+  },
   devServer: {
       historyApiFallback: true, 
       proxy: {

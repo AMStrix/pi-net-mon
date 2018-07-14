@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
+import { Route, Switch, Redirect } from 'react-router-dom';
 import { Button, Form, Grid, Header, Message, Segment, Step, Icon, Divider } from 'semantic-ui-react'
 
 import CreateAdmin from './CreateAdmin';
@@ -13,6 +14,7 @@ class Install extends Component {
   render() {
     let stepAdmin = !this.props.hasAdmin;
     let stepBro = !stepAdmin && !this.props.hasBro;
+    let url = this.props.match.url;
     return (
       <div style={{ height: '100%' }}>
         <Grid textAlign='center' style={{ height: '100%' }} verticalAlign='middle'>
@@ -37,16 +39,17 @@ class Install extends Component {
                   </Step.Content>
                 </Step>
               </Step.Group>
-              {stepAdmin && 
-                <Segment attached='bottom'>
-                  <CreateAdmin onChange={this.props.onChange} />
-                </Segment>
-              }
-              {stepBro && 
-                <Segment attached='bottom'>
-                  <InstallBro onChange={this.props.onChange} />
-                </Segment>
-              }
+
+              <Segment attached='bottom'>
+                <Switch>
+                  { !stepAdmin && stepBro && <Redirect to={url + '/bro'} /> }
+                  { !stepAdmin && !stepBro && <Redirect to='/dashboard' /> }
+                  <Route path={url + '/admin'} component={CreateAdmin} />
+                  { stepAdmin && <Redirect to={url + '/admin'} /> }
+                  <Route path={url + '/bro'} component={InstallBro} />
+                </Switch>
+              </Segment>
+
             </div>
           </Grid.Column>
         </Grid>
