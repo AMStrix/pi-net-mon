@@ -1,0 +1,28 @@
+{
+  "name": "pi-net-mon-backend",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.16.3",
+    "express-graphql": "^0.6.12",
+    "express-session": "^1.15.6",
+    "graphql": "^0.13.2",
+    "nedb": "^1.8.0",
+    "nedb-promise": "^2.0.1",
+    "nedb-session-store": "^1.1.2",
+    "node-nmap": "^4.0.0",
+    "shelljs": "^0.8.2",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^1.17.5"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npm run-script dev",
+    "dev": "./node_modules/nodemon/bin/nodemon.js server.js"
+  },
+  "author": "Aaron Stricker",
+  "license": "ISC"
+}
