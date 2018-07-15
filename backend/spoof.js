@@ -6,20 +6,32 @@ const db = require('./db');
 const INTERFACE = 'eth0';
 let running = false;
 let currentPingSweep = null;
-// dfgw ip -> sudo ip route
 
 // let qs = new nmap.QuickScan('192.168.0.1-255');
 // let hosts;
 
 // qs.on('complete', d => hosts = d);
 // qs.on('error', d => console.log('error', d));
+
 let state = {
+  errors: [],
   pingSweep: {
     scanStart: null,
     processing: false,
-    scanTime: 0,
+    scanTime: null,
+  },
+  portScan: {
+    scanStart: null,
+    processing: false,
+    scanTime: null,
+    host: null
   }
 };
+
+function addError(e) {
+  console.log('ERROR spoof.js', e);
+  state.errors.push(e.toString());
+}
 
 function thisMac() {
   let ifconfig = sh.exec("ifconfig eth0", {silent:true}).stdout;
@@ -36,6 +48,12 @@ function thisIp() {
 function localRange() {
   let ip = thisIp();
   return ip ? ip + '/24' : null;
+}
+
+function thisGateway() {
+  let iproute = sh.exec('ip route', {silent:true}).stdout;
+  let gwSearch = /default\svia\s([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/.exec(iproute);
+  return gwSearch.length === 2 ? gwSearch[1] : null;
 }
 
 function pingSweep() {
@@ -58,8 +76,12 @@ function pingSweep() {
       ds.forEach(db.updateLocalIp);
       ds.forEach(db.updateDevice);
     });
-    currentPingSweep.on('error', e => console.log('sweep error', e));
+    currentPingSweep.on('error', addError);
   }
+}
+
+function portScan() {
+  
 }
 
 function updateState() {
@@ -76,6 +98,8 @@ function updateState() {
 
 module.exports = {};
 
+module.exports.state = state;
+
 module.exports.start = () => {
   if (running) return;
   running = true;
@@ -83,8 +107,4 @@ module.exports.start = () => {
   setInterval(updateState, 1000);
   pingSweep();
   setInterval(pingSweep, 60 * 1000 * 20);
-};
-
-module.exports.state = () => {
-
 };

@@ -39,6 +39,17 @@ let schema = buildSchema(`
     authed: Boolean,
     authError: String
   }
+  type ScanStatus {
+    host: String,
+    scanStart: String,
+    scanTime: Int,
+    processing: Boolean
+  }
+  type SpoofStatus {
+    errors: [String],
+    pingSweep: ScanStatus,
+    portScan: ScanStatus
+  }
 
 
   type Query {
@@ -46,7 +57,8 @@ let schema = buildSchema(`
     installBro: Boolean,
     broStatus: BroStatus,
     status: Status,
-    devices: [Device]
+    devices: [Device],
+    spoofStatus: SpoofStatus
   }
 
   type Mutation {
@@ -56,13 +68,25 @@ let schema = buildSchema(`
 
 `);
 
+  // errors: [],
+  // pingSweep: {
+  //   scanStart: null,
+  //   processing: false,
+  //   scanTime: null,
+  // },
+  // portScan: {
+  //   scanStart: null,
+  //   processing: false,
+  //   scanTime: null,
+  //   host: null
+  // }
+
 function devicesToGql(devices) {
   devices.forEach(d => d.ips = Object.values(d.ips));
   return devices;
 };
 
 function login({user, pass}, {session}) {
-  console.log('u/p', user, pass);
   return db.authorize(user, pass)
     .then(err => {
       session.authed = true;
@@ -94,6 +118,7 @@ let root = {
   broStatus: { isDeployed: false },
   status: status,
   login: login,
+  spoofStatus: () => spoof.state
 };
 
 module.exports = expressGraphql({

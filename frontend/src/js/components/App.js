@@ -3,9 +3,9 @@ import ReactDOM from "react-dom";
 import { Route, Switch, Redirect } from 'react-router-dom';
 import { graphql } from 'react-apollo';
 import gql from 'graphql-tag';
+import styled from 'styled-components';
 
 import c from '../colors';
-import styled from 'styled-components';
 import Menu from './Menu';
 import Install from './Install';
 import Dashboard from './Dashboard';
@@ -26,6 +26,7 @@ const ContentWrapper = styled.div`
   display: flex;
   flex: 1;
   padding-left: 210px;
+  padding-right: 10px;
 `;
 
 class App extends Component {
