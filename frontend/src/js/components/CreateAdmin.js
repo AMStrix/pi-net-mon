@@ -62,7 +62,7 @@ class CreateAdmin extends Component {
               onChange={e => this.setState({ passCheck: e.target.value })}
             />
             <Button 
-              color='teal' 
+              primary 
               fluid 
               size='large' 
               onClick={() => {

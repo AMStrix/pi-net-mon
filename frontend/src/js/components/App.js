@@ -10,9 +10,10 @@ import Menu from './Menu';
 import Install from './Install';
 import Dashboard from './Dashboard';
 import Devices from './Devices';
+import Login from './Login';
 
 const Wrapper = styled.div`
-  height: 100%;
+  min-height: 100%;
   background: ${c.background};
 `;
 
@@ -22,7 +23,7 @@ const MenuWrapper = styled.div`
 `;
 const ContentWrapper = styled.div`
   height: 100%;
-  margin-left: 250px;
+  margin-left: 210px;
 `;
 
 class App extends Component {
@@ -41,7 +42,7 @@ class App extends Component {
     let isInstall = 
       !this.props.status.installStatus.hasAdmin || 
       !this.props.status.installStatus.hasBro;
-    let authed = this.props.status.authed;
+    let authed = this.props.status.status.authed;
     return (
       <Wrapper>
         <MenuWrapper>
@@ -56,7 +57,7 @@ class App extends Component {
             {isInstall &&  <Redirect to='/install' /> }
             <Route
               path='/login'
-              render={() => <div>login</div> }
+              render={() => <Login {...this.props.status.status} />}
             />
             {!authed && <Redirect to='/login' /> }
             <Route exact path='/' component={Dashboard} />
@@ -76,6 +77,9 @@ const STATUS = gql`
     installStatus {
       hasAdmin,
       hasBro
+    }
+    status {
+      authed
     }
   }
 `;

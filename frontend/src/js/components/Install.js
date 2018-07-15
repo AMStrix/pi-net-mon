@@ -19,7 +19,7 @@ class Install extends Component {
       <div style={{ height: '100%' }}>
         <Grid textAlign='center' style={{ height: '100%' }} verticalAlign='middle'>
           <Grid.Column style={{ maxWidth: 600 }} textAlign='left'>
-            <Header as='h2' color='teal' textAlign='center'>
+            <Header as='h2' textAlign='center'>
               Install
             </Header>
             <div>

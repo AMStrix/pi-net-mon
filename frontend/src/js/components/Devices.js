@@ -25,13 +25,14 @@ const Devices = () => (
       if (error) return `Error! ${error.message}`;
 
       return (
-        <Container>
+        <div style={{margin: '30px 40px 40px 40px'}}>
           <Card.Group stackable>
             {data.devices.map(d =>
               <Device key={d.mac} {...d} />
             )}
           </Card.Group>
-        </Container>
+          <div style={{clear: 'both'}}>&nbsp;</div>
+        </div>
       );
     }}
   </Query>
