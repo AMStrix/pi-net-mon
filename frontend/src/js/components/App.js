@@ -13,8 +13,8 @@ import Devices from './Devices';
 import Login from './Login';
 
 const Wrapper = styled.div`
+  display: flex;
   min-height: 100%;
-  background: ${c.background};
 `;
 
 const MenuWrapper = styled.div`
@@ -22,8 +22,10 @@ const MenuWrapper = styled.div`
   overflow-x: hidden;
 `;
 const ContentWrapper = styled.div`
-  height: 100%;
-  margin-left: 210px;
+  background: ${c.background};
+  display: flex;
+  flex: 1;
+  padding-left: 210px;
 `;
 
 class App extends Component {
