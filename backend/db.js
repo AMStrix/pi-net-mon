@@ -57,7 +57,8 @@ function makeDevice(d) {
       mac: d.mac,
       vendor: d.vendor,
       ips: {},
-      isSensor: d.isSensor ? true : false
+      isSensor: d.isSensor ? true : false,
+      isGateway: d.isGateway ? true : false
     };
     dev.ips[ipToKey(d.ip)] = {
       ip: d.ip,

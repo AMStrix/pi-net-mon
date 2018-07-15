@@ -30,7 +30,8 @@ let schema = buildSchema(`
     mac: String!,
     vendor: String,
     ips: [Ip],
-    isSensor: Boolean
+    isSensor: Boolean,
+    isGateway: Boolean
   }
   type BroStatus {
     isDeployed: Boolean
@@ -68,18 +69,6 @@ let schema = buildSchema(`
 
 `);
 
-  // errors: [],
-  // pingSweep: {
-  //   scanStart: null,
-  //   processing: false,
-  //   scanTime: null,
-  // },
-  // portScan: {
-  //   scanStart: null,
-  //   processing: false,
-  //   scanTime: null,
-  //   host: null
-  // }
 
 function devicesToGql(devices) {
   devices.forEach(d => d.ips = Object.values(d.ips));

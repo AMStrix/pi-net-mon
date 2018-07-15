@@ -40,14 +40,14 @@ const SpoofStatus = () => (
       return (
         <SpoofStatusWrap>
           <div>
-            <Icon rotated='clockwise' name='wifi' disabled={!ping.processing}/>
+            <Icon name='target' disabled={!ping.processing}/>
             {ping.processing ? 
               `sweeping, started ${moment(ping.scanStart).from(new Date())}` :
               `last sweep took ${ping.scanTime||0}ms` 
             }
           </div>
           <div>
-            <Icon name='target' disabled={!scan.processing}/>
+            <Icon name='crosshairs' disabled={!scan.processing}/>
             {scan.processing ? 
               `portscan, started ${moment(scan.scanStart).from(new Date())}` :
               `last portscan took ${scan.scanTime||0}ms` 
@@ -65,6 +65,7 @@ const DEVICES = gql`
       mac,
       vendor,
       isSensor,
+      isGateway,
       ips {
         ip,
         seen
@@ -104,14 +105,17 @@ function latestIp(ips) {
   });
 }
 
-const Device = ({mac, ips, vendor, isSensor}) => (
+const Device = ({mac, ips, vendor, isSensor, isGateway}) => (
   <Grid.Column mobile={16} tablet={8} computer={4} largeScreen={4} widescreen={2}>
     <Card fluid style={{ height: '100%' }}>
       <Card.Content>
         <Card.Header>
           {isSensor && 
-            <Popup trigger={<Icon name='eye' />} content='pi-net-mon sensor' />
-          }   
+            <Popup trigger={<Icon name='eye' style={{float:'right'}} />} content='pi-net-mon sensor' />
+          }
+          {isGateway && 
+            <Popup trigger={<Icon name='hdd' style={{float: 'right'}} />} content='gateway' />
+          }
           {mac}
         </Card.Header>
         <Card.Meta>

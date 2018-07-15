@@ -66,11 +66,15 @@ function pingSweep() {
       state.pingSweep.processing = false;
       state.pingSweep.scanTime = currentPingSweep.scanTime;
       const hostIp = thisIp();
+      const gwIp = thisGateway();
       ds.forEach(d => { 
         if (d.ip === hostIp) { 
           d.mac = thisMac();
           d.isSensor = true; 
         } 
+        if (d.ip === gwIp) {
+          d.isGateway = true;
+        }
       });
       //console.log(ds);
       ds.forEach(db.updateLocalIp);
@@ -81,7 +85,7 @@ function pingSweep() {
 }
 
 function portScan() {
-  
+
 }
 
 function updateState() {
