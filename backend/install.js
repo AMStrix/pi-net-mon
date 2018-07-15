@@ -161,18 +161,16 @@ function hasBro() {
 }
 
 async function hasAdmin(a,req,c) {
-  //req.session.xx = 'test';
   let admin;
   try {
     admin = await db.getAdmin();
   } catch (e) {
     console.log('db.getAdmin() error', e);
   }
-  //console.log('got admin', admin);
   return admin ? true : false;
 }
 
-async function createAdmin({user, pass}) {
+async function createAdmin(user, pass) {
   let res;
   try {
     res = await db.createAdmin(user, pass);

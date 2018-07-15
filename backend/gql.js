@@ -35,16 +35,25 @@ let schema = buildSchema(`
   type BroStatus {
     isDeployed: Boolean
   }
+  type Status {
+    authed: Boolean,
+    authError: String
+  }
+
 
   type Query {
     installStatus: InstallStatus,
     installBro: Boolean,
     broStatus: BroStatus,
+    status: Status,
     devices: [Device]
   }
+
   type Mutation {
     createAdmin(user: String!, pass: String!): String,
+    login(user: String!, pass: String!): Status
   }
+
 `);
 
 function devicesToGql(devices) {
@@ -52,12 +61,39 @@ function devicesToGql(devices) {
   return devices;
 };
 
+function login({user, pass}, {session}) {
+  console.log('u/p', user, pass);
+  return db.authorize(user, pass)
+    .then(err => {
+      session.authed = true;
+      return err;
+    })
+    .then(err =>  err && ({
+        authError: err,
+        authed: false
+      }) || ({ 
+        authed: true 
+      }));
+}
+
+function status(_, {session}) {
+  return {
+    authed: session.authed
+  };
+}
+
+function checkAuth(session) {
+  console.log('check auth', session);
+}
+
 let root = {
   installStatus: install.getState,
-  createAdmin: install.createAdmin,
+  createAdmin: ({user, pass}) => install.createAdmin(user, pass),
   installBro: install.install,
   devices: () => db.getDevices().then(devicesToGql),
-  broStatus: { isDeployed: false }
+  broStatus: { isDeployed: false },
+  status: status,
+  login: login,
 };
 
 module.exports = expressGraphql({
