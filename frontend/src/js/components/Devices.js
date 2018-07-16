@@ -72,7 +72,7 @@ const GridItem = styled.div`
   position: relative;
   width: ${itemW}px;
   margin: ${gutter}px;
-  padding: ${padding}px;
+  padding: ${padding * (1/2)}px ${padding}px ${padding * (3/8)}px;
   background: white;
   box-shadow: ${boxShadow};
   & hr {
@@ -89,10 +89,13 @@ const GridItem = styled.div`
     color: #9a9a9a;
   }
   ._scanButton {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s, opacity 300ms linear;
   }
   &:hover ._scanButton {
-    display: inline-block;
+    visibility: visible;
+    opacity: 1;
   }
 `;
 const GridOverlay = styled.div`
@@ -101,10 +104,15 @@ const GridOverlay = styled.div`
   top: 0; bottom: 0; left: 0; right: 0;
   background: rgba(0,0,0,0.9);
   color: white;
-  font-size: 0.8em;
-  padding: 4px 3px 0 6px;
-  overflow-y: auto;
+  & ._scroll {
+    position: absolute;
+    top: 0; bottom: 0; left: 0; right: 0;
+    overflow-y: auto;
+    padding: 4px 3px 0 6px;
+  }
   & ._close {
+    z-index: 1;
+    margin: 4px;
     font-size: 16px;
     position: absolute;
     right: 0;
@@ -115,6 +123,24 @@ const GridOverlay = styled.div`
   & table { 
     width: 100%; 
     th { text-align: left; }
+  }
+`;
+const GridOverlayNotice = styled.div`
+  height: 100%;
+  display: flex;
+  font-size: 1rem;
+  flex-direction: column;
+  & ._content {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    & > div {
+      text-align: center;
+      flex-grow: 1;
+    }
+  }
+  & ._controls {
+    margin-bottom: 6px;
   }
 `;
 
@@ -147,7 +173,6 @@ const SpoofStatus = ({pingSweep, portScan}) => (
       </div>
       <div>
         <Icon name='crosshairs' disabled={!portScan.processing}/>
-        {console.log(portScan.processing && portScan.scanStart)}
         {portScan.processing && portScan.scanStart ? 
           `${portScan.host} portscan started ${moment(portScan.scanStart).from(new Date())}` :
           `portscan: ${fromNow(portScan.scanStart)} / ${fmtDuration(portScan.scanTime||0)}` 
@@ -189,26 +214,12 @@ const Devices = () => (
   </Query>
 );
 
-const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data) => {
+const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loading) => {
   let ip = latestIp(p.ips).ip;
   let beingScanned = p.isScanning && p.activeIp === ip;
   return (
     <GridItem>
-      { state.showPorts && <GridOverlay>
-        <Icon name='close' className='_close' onClick={hidePorts}/>
-        <table>
-            <thead><tr><th>port</th><th>service</th><th>seen</th></tr></thead>
-            <tbody>
-            {p.ports.map(port => (
-              <tr key={port.port}>
-                <td>{port.port}</td>
-                <td>{port.service}</td>
-                <td>{fromNow(port.seen)}</td>
-              </tr>
-            ))}
-            </tbody>
-        </table>
-      </GridOverlay>}
+      { state.showPorts && <PortsOverlay ports={p.ports} onHide={hidePorts} /> }
       <div className='mac'>
         {p.isSensor && 
           <Popup 
@@ -250,13 +261,21 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data) => {
       <div className='seen'>
         <Icon name='clock' />
         { moment(latestIp(p.ips).seen).from(new Date()) }
-        { !p.isScanning && <Button 
+        { <Button 
           className="_scanButton"
           content='scan now' 
           size='mini' 
+          loading={loading}
+          disabled={loading || p.isScanning}
           style={{padding: '4px 6px', float: 'right'}}
           onClick={() => scan({ variables: {ip}})} 
         /> }
+        { data && data.scan && <NoticeOverlay content={
+          <span>
+            <Icon name='warning' />
+            { data.scan }
+          </span>
+        } />}
       </div>
     </GridItem>
   );
@@ -268,9 +287,60 @@ class Device extends Component {
   hidePorts = () => this.setState({ showPorts: false });
   render() {return (
     <Mutation mutation={SCAN}>
-      {(scan, {data}) => renderDevice(this, scan, data)}
+      {(scan, {data, loading}) => renderDevice(this, scan, data, loading)}
     </Mutation>
   )};
 }
+
+const Overlay = ({onHide, children}) => (
+  <GridOverlay>
+    <Icon name='close' className='_close' onClick={onHide}/>
+    <div className='_scroll'>
+      { children }
+    </div>
+  </GridOverlay>
+);
+
+const PortsOverlay = ({ports, onHide}) => (
+  <Overlay onHide={onHide} >
+    <table style={{ fontSize: '0.8em' }}>
+      <thead><tr><th>port</th><th>service</th><th>seen</th></tr></thead>
+      <tbody>
+      {ports.map(port => (
+        <tr key={port.port}>
+          <td>{port.port}</td>
+          <td>{port.service}</td>
+          <td>{fromNow(port.seen)}</td>
+        </tr>
+      ))}
+      </tbody>
+    </table>
+  </Overlay>
+);
+
+class NoticeOverlay extends Component {
+  state = { show: true };
+  handleHide() {
+    this.setState({ show: false });
+  }
+  render() { 
+    const {content} = this.props;
+    if (!this.state.show) { return null; }
+    return (
+      <Overlay onHide={this.handleHide.bind(this)}>
+        <GridOverlayNotice>
+          <div className='_content'><div>{content}</div></div>
+          <Button 
+            inverted
+            className='_controls' 
+            content='ok' 
+            size='mini' 
+            onClick={this.handleHide.bind(this)} 
+          />
+        </GridOverlayNotice>
+      </Overlay>
+    );
+  }
+} 
 
 export default Devices;

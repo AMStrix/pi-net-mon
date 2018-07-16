@@ -3,6 +3,7 @@ const nmap = require('./node-nmap');
 
 const db = require('./db');
 
+const PORTSCAN_STALE = 60 * 1000 * 60 * 12;
 const INTERFACE = 'eth0';
 let running = false;
 let currentPingSweep = null;
@@ -91,33 +92,58 @@ function latestDeviceIp(dev) {
 
 function portScanLoop() {
   if (currentPortScan) { return; } // one at a time
-  let staleAfter = 60 * 1000 * 60 * 12; // 12 hrs
-  let now = new Date();
   db.getDevices().then(ds => {
     ds.forEach(d => {
-      if (!d.lastPortscanTime || now - d.lastPortscanTime > staleAfter) {
-        portScan(latestDeviceIp(d).ip);
-      }
+      portScanIfStale(latestDeviceIp(d).ip, d.lastPortscanTime);
     })
   });
 }
 
+function isHostUp(ip, cb) {
+  let ping = new nmap.NmapScan(ip, '-sn');
+  ping.on('complete', ds => {
+    cb(ds.length === 1 && ds[0] || null);
+  });
+}
+
+function portScanIfStale(ip, lastScanTime) {
+  let now = new Date();
+  if (!lastScanTime || now - lastScanTime > PORTSCAN_STALE) {
+    portScan(ip);
+  }
+}
+
 function portScan(ip) {
-  if (currentPortScan) { return; }
-  state.portScan.scanStart = (new Date()).toISOString();
-  state.portScan.host = ip;
-  state.portScan.processing = true;
-  currentPortScan = new nmap.OsAndPortScan(ip);
-  currentPortScan.on('complete', ds => {
-    state.portScan.processing = false;
-    state.portScan.scanTime = currentPortScan.scanTime;
-    ds.forEach(d => {
-      !d.mac && d.ip === thisIp() && (d.mac = thisMac());
-      d.lastPortscanTime = new Date();
-      db.updateDevice(d);
+  return new Promise((res, rej) => {
+    if (currentPortScan) { 
+      res('portscan in progress');
+      return; 
+    }
+    currentPortScan = true; // lock-in now, will get set to nmap obj
+    isHostUp(ip, isUp => {
+      if (!isUp) {
+        currentPortScan = null; // unlock
+        res('host down');
+      }
+      if (isUp) {
+        res();
+        state.portScan.scanStart = (new Date()).toISOString();
+        state.portScan.host = ip;
+        state.portScan.processing = true;
+        currentPortScan = new nmap.OsAndPortScan(ip);
+        currentPortScan.on('complete', ds => {
+          state.portScan.processing = false;
+          state.portScan.scanTime = currentPortScan.scanTime;
+          ds.forEach(d => {
+            !d.mac && d.ip === thisIp() && (d.mac = thisMac());
+            d.lastPortscanTime = new Date();
+            db.updateDevice(d);
+          });
+          currentPortScan = null;
+        })
+      }
     });
-    currentPortScan = null;
-  })
+  });
 }
 
 function updateState() {
@@ -142,5 +168,5 @@ module.exports.start = () => {
 };
 
 module.exports.scanIp = ip => {
-  portScan(ip);
+  return portScan(ip);
 }
