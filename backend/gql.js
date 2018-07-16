@@ -39,7 +39,8 @@ let schema = buildSchema(`
     ips: [Ip],
     ports: [Port],
     isSensor: Boolean,
-    isGateway: Boolean
+    isGateway: Boolean,
+    lastPortscanTime: String
   }
   type BroStatus {
     isDeployed: Boolean
@@ -77,10 +78,20 @@ let schema = buildSchema(`
 
 `);
 
+function dateToIsoString(obj, field) {
+  if (obj[field]) {
+    obj[field] = obj[field].toISOString();
+  }
+  return obj;
+}
 
 function devicesToGql(devices) {
-  devices.forEach(d => d.ips && (d.ips = Object.values(d.ips)));
-  devices.forEach(d => d.ports && (d.ports = Object.values(d.ports)));
+  devices.forEach(d => d.ips && 
+    (d.ips = Object.values(d.ips).map(x => dateToIsoString(x, 'seen'))));
+  devices.forEach(d => d.ports && 
+    (d.ports = Object.values(d.ports).map(x => dateToIsoString(x, 'seen'))));
+  devices.forEach(d => d.lastPortscanTime && 
+    (d.lastPortscanTime = d.lastPortscanTime.toISOString()));
   return devices;
 };
 

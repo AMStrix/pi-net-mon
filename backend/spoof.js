@@ -78,8 +78,31 @@ function pingSweep() {
   }
 }
 
-function portScan() {
-  let ip = thisIp();
+function latestDeviceIp(dev) {
+  return Object.values(dev.ips).reduce((latest, ip) => {
+    if (latest.seen - ip.seen > 0) {
+      return latest;
+    } else {
+      return ip;
+    }
+  });
+}
+
+function portScanLoop() {
+  if (currentPortScan) { return; } // one at a time
+  let staleAfter = 60 * 1000 * 60 * 12; // 12 hrs
+  let now = new Date();
+  db.getDevices().then(ds => {
+    ds.forEach(d => {
+      if (!d.lastPortscanTime || now - d.lastPortscanTime > staleAfter) {
+        portScan(latestDeviceIp(d).ip);
+      }
+    })
+  });
+}
+
+function portScan(ip) {
+  if (currentPortScan) { return; }
   state.portScan.scanStart = (new Date()).toISOString();
   state.portScan.host = ip;
   state.portScan.processing = true;
@@ -89,8 +112,10 @@ function portScan() {
     state.portScan.scanTime = currentPortScan.scanTime;
     ds.forEach(d => {
       !d.mac && d.ip === thisIp() && (d.mac = thisMac());
+      d.lastPortscanTime = new Date();
       db.updateDevice(d);
     });
+    currentPortScan = null;
   })
 }
 
@@ -111,4 +136,6 @@ module.exports.start = () => {
   setInterval(updateState, 1000);
   pingSweep();
   setInterval(pingSweep, 60 * 1000 * 20);
+  portScanLoop();
+  setInterval(portScanLoop, 60 * 1000);
 };

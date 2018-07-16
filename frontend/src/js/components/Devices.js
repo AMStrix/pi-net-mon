@@ -103,36 +103,28 @@ function fmtDuration(ms) {
 }
 
 function fromNow(when) {
+  if (!when) { return 'never'; }
   return moment(when).from(new Date());
 }
 
-const SpoofStatus = () => (
-  <Query query={SPOOF_STATUS} pollInterval={5000}>
-    {({ loading, error, data }) => {
-      if (loading) return 'loading...';
-      if (error) return 'Error! ' + error.message;
-      let ping = data.spoofStatus.pingSweep;
-      let scan = data.spoofStatus.portScan;
-      return (
-        <GridHead>
-          <div>
-            <Icon name='target' disabled={!ping.processing}/>
-            {ping.processing ? 
-              `sweeping started ${fromNow(ping.scanStart)}` :
-              `sweep: ${fromNow(ping.scanStart)} / ${fmtDuration(ping.scanTime||0)}` 
-            }
-          </div>
-          <div>
-            <Icon name='crosshairs' disabled={!scan.processing}/>
-            {scan.processing ? 
-              `portscan started ${moment(scan.scanStart).from(new Date())}` :
-              `portscan: ${fromNow(ping.scanStart)} / ${fmtDuration(scan.scanTime||0)}` 
-            }
-          </div>
-        </GridHead>
-      )
-    }}
-  </Query>
+const SpoofStatus = ({pingSweep, portScan}) => (
+    <GridHead>
+      <div>
+        <Icon name='target' disabled={!pingSweep.processing}/>
+        {pingSweep.processing ? 
+          `sweeping started ${fromNow(pingSweep.scanStart)}` :
+          `sweep: ${fromNow(pingSweep.scanStart)} / ${fmtDuration(pingSweep.scanTime||0)}` 
+        }
+      </div>
+      <div>
+        <Icon name='crosshairs' disabled={!portScan.processing}/>
+        {console.log(portScan.processing && portScan.scanStart)}
+        {portScan.processing && portScan.scanStart ? 
+          `${portScan.host} portscan started ${moment(portScan.scanStart).from(new Date())}` :
+          `portscan: ${fromNow(portScan.scanStart)} / ${fmtDuration(portScan.scanTime||0)}` 
+        }
+      </div>
+    </GridHead>
 );
 
 const DEVICES = gql`
@@ -152,6 +144,21 @@ const DEVICES = gql`
         protocol,
         service,
         seen
+      }
+    }
+    spoofStatus {
+      errors,
+      pingSweep {
+        host,
+        scanStart,
+        scanTime,
+        processing
+      }
+      portScan {
+        host,
+        scanStart,
+        scanTime,
+        processing
       }
     }
   }
@@ -175,8 +182,15 @@ const Devices = () => (
 
       return (
         <Grid>
-          <SpoofStatus />
-          {data.devices.map(d =><Device key={d.mac} {...d} />)}
+          <SpoofStatus {...data.spoofStatus}/>
+          {data.devices.map(d =>
+            <Device 
+              key={d.mac} 
+              {...d} 
+              activeIp={data.spoofStatus.portScan.host}
+              isScanning={data.spoofStatus.portScan.processing}
+            />
+          )}
         </Grid>
       );
     }}
@@ -185,62 +199,71 @@ const Devices = () => (
 
 
 
-const renderDevice = ({showPorts, hidePorts, state, props: p}) => (
-  <GridItem>
-    { state.showPorts && <GridOverlay>
-      <Icon name='close' className='_close' onClick={hidePorts}/>
-      <table>
-          <thead><tr><th>port</th><th>service</th><th>seen</th></tr></thead>
-          <tbody>
-          {p.ports.map(port => (
-            <tr key={port.port}>
-              <td>{port.port}</td>
-              <td>{port.service}</td>
-              <td>{fromNow(port.seen)}</td>
-            </tr>
-          ))}
-          </tbody>
-      </table>
-    </GridOverlay>}
-    <div className='mac'>
-      {p.isSensor && 
-        <Popup 
-          trigger={<Icon name='eye' style={{float:'right'}} />} 
-          content='pi-net-mon sensor'
-        />
-      }
-      {p.isGateway && 
-        <Popup 
-          trigger={<Icon name='hdd' style={{float: 'right'}} />} 
-          content='gateway' 
-        />
-      }
-      {p.mac}
-    </div>
-    <div className='ip'>
-      {latestIp(p.ips).ip} 
-      { p.ports && p.ports.length && 
-        <SlideLabel 
-          content={p.ports.length} 
-          label='open ports' 
-          float='right' 
-          color='#538eff'
-          onClick={showPorts}
-        /> 
-      }
-    </div>
-    <hr />
-    <div className='extra'>
-      {p.vendor || '(no vendor discovered)'}<br/>
-      {p.os || '(os not detected)'}
-    </div>
-    <hr />
-    <div className='seen'>
-      <Icon name='clock' />
-      { moment(latestIp(p.ips).seen).from(new Date()) }
-    </div>
-  </GridItem>
-);
+const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
+  let ip = latestIp(p.ips).ip;
+  let beingScanned = p.isScanning && p.activeIp === ip;
+  return (
+    <GridItem>
+      { state.showPorts && <GridOverlay>
+        <Icon name='close' className='_close' onClick={hidePorts}/>
+        <table>
+            <thead><tr><th>port</th><th>service</th><th>seen</th></tr></thead>
+            <tbody>
+            {p.ports.map(port => (
+              <tr key={port.port}>
+                <td>{port.port}</td>
+                <td>{port.service}</td>
+                <td>{fromNow(port.seen)}</td>
+              </tr>
+            ))}
+            </tbody>
+        </table>
+      </GridOverlay>}
+      <div className='mac'>
+        {p.isSensor && 
+          <Popup 
+            trigger={<Icon name='eye' style={{float:'right'}} />} 
+            content='pi-net-mon sensor'
+          />
+        }
+        {p.isGateway && 
+          <Popup 
+            trigger={<Icon name='hdd' style={{float: 'right'}} />} 
+            content='gateway' 
+          />
+        }
+        {p.mac}
+      </div>
+      <div className='ip'>
+        { beingScanned ? <SlideLabel
+              content={ip}
+              label={'portscanning...'}
+              color='#ff6c00'
+            /> : ip
+        } 
+        { p.ports && p.ports.length && 
+          <SlideLabel 
+            content={p.ports.length} 
+            label='open ports' 
+            float='right' 
+            color='#538eff'
+            onClick={showPorts}
+          /> 
+        }
+      </div>
+      <hr />
+      <div className='extra'>
+        {p.vendor || '(no vendor discovered)'}<br/>
+        {p.os || '(os not detected)'}
+      </div>
+      <hr />
+      <div className='seen'>
+        <Icon name='clock' />
+        { moment(latestIp(p.ips).seen).from(new Date()) }
+      </div>
+    </GridItem>
+  );
+} 
 
 class Device extends Component {
   state = { showPorts: false };

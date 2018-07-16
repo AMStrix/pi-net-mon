@@ -30,20 +30,19 @@ db.localIps.ensureIndex({ fieldName: 'ip', uniuqe: true },
 
 
 // db.users.find({}, (e, d) => d.forEach(console.log));
-// db.users.remove({}, {multi: true}); 
-
+// db.devices.remove({}, {multi: true}); 
 
 // data manipulation
 function makeLocalIp(d) {
   let ip = { 
     ip: d.ip, 
-    seen: (new Date()).toISOString() 
+    seen: new Date() 
   };
   if (d.mac) {
     ip.macs = {};
     ip.macs[d.mac] = {
       mac: d.mac,
-      seen: (new Date()).toISOString()
+      seen: new Date()
     }
   }
   return ip;
@@ -53,17 +52,17 @@ function ipToKey(ip) { return ip.replace(/\./g, '-'); }
 
 function makeDevice(d) {
   let dev = null;
-  let now = (new Date()).toISOString();
+  let now = new Date();
   if (d.mac) {
     dev = {
       mac: d.mac,
-      vendor: d.vendor,
-      os: d.osNmap || null,
       ips: {}
     };
+    d.vendor && (dev.vendor = d.vendor);
     d.osNmap && (dev.os = d.osNmap);
     d.isSensor && (dev.isSensor = true);
     d.isGateway && (dev.isGateway = true);
+    d.lastPortscanTime && (dev.lastPortscanTime = d.lastPortscanTime);
     dev.ips[ipToKey(d.ip)] = {
       ip: d.ip,
       seen: now
@@ -78,7 +77,6 @@ function makeDevice(d) {
   }
   return dev;
 }
-
 
 // exports
 module.exports = {};
