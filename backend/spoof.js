@@ -6,12 +6,7 @@ const db = require('./db');
 const INTERFACE = 'eth0';
 let running = false;
 let currentPingSweep = null;
-
-// let qs = new nmap.QuickScan('192.168.0.1-255');
-// let hosts;
-
-// qs.on('complete', d => hosts = d);
-// qs.on('error', d => console.log('error', d));
+let currentPortScan = null;
 
 let state = {
   errors: [],
@@ -76,7 +71,6 @@ function pingSweep() {
           d.isGateway = true;
         }
       });
-      //console.log(ds);
       ds.forEach(db.updateLocalIp);
       ds.forEach(db.updateDevice);
     });
@@ -85,20 +79,26 @@ function pingSweep() {
 }
 
 function portScan() {
-
+  let ip = thisIp();
+  state.portScan.scanStart = (new Date()).toISOString();
+  state.portScan.host = ip;
+  state.portScan.processing = true;
+  currentPortScan = new nmap.OsAndPortScan(ip);
+  currentPortScan.on('complete', ds => {
+    state.portScan.processing = false;
+    state.portScan.scanTime = currentPortScan.scanTime;
+    ds.forEach(d => {
+      !d.mac && d.ip === thisIp() && (d.mac = thisMac());
+      db.updateDevice(d);
+    });
+  })
 }
 
 function updateState() {
-  //console.log('currentPingSweep', currentPingSweep ? currentPingSweep.scanTime : 'not running');
   if (currentPingSweep) {
     state.pingSweep.scanTime = currentPingSweep.scanTime;
   }
 }
-
-//pingSweep();
-//console.log(localRange())
-//console.log(thisIp());
-//console.log(sh.exec("ifconfig eth0", {silent:true}).stdout);
 
 module.exports = {};
 

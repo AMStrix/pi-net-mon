@@ -26,10 +26,18 @@ let schema = buildSchema(`
     ip: String!,
     seen: String
   }
+  type Port {
+    port: Int,
+    protocol: String,
+    service: String,
+    seen: String
+  }
   type Device {
     mac: String!,
     vendor: String,
+    os: String,
     ips: [Ip],
+    ports: [Port],
     isSensor: Boolean,
     isGateway: Boolean
   }
@@ -71,7 +79,8 @@ let schema = buildSchema(`
 
 
 function devicesToGql(devices) {
-  devices.forEach(d => d.ips = Object.values(d.ips));
+  devices.forEach(d => d.ips && (d.ips = Object.values(d.ips)));
+  devices.forEach(d => d.ports && (d.ports = Object.values(d.ports)));
   return devices;
 };
 

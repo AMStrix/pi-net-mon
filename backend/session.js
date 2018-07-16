@@ -16,4 +16,4 @@ module.exports = session({
   store: sessionStore
 });
 
-sessionStore.clear();
+//sessionStore.clear();

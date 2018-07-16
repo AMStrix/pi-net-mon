@@ -28,8 +28,9 @@ db.devices.ensureIndex({ fieldName: 'mac', unique: true },
 db.localIps.ensureIndex({ fieldName: 'ip', uniuqe: true },
   e => e && console.log(e));
 
-db.users.find({}, (e, d) => d.forEach(console.log));
-db.users.remove({}, {multi: true}); 
+
+// db.users.find({}, (e, d) => d.forEach(console.log));
+// db.users.remove({}, {multi: true}); 
 
 
 // data manipulation
@@ -52,18 +53,28 @@ function ipToKey(ip) { return ip.replace(/\./g, '-'); }
 
 function makeDevice(d) {
   let dev = null;
+  let now = (new Date()).toISOString();
   if (d.mac) {
     dev = {
       mac: d.mac,
       vendor: d.vendor,
-      ips: {},
-      isSensor: d.isSensor ? true : false,
-      isGateway: d.isGateway ? true : false
+      os: d.osNmap || null,
+      ips: {}
     };
+    d.osNmap && (dev.os = d.osNmap);
+    d.isSensor && (dev.isSensor = true);
+    d.isGateway && (dev.isGateway = true);
     dev.ips[ipToKey(d.ip)] = {
       ip: d.ip,
-      seen: (new Date()).toISOString()
+      seen: now
     };
+    if (d.openPorts && d.openPorts.length > 0) {
+      dev.ports = d.openPorts.reduce((a, x) => {
+        x.seen = now;
+        a[x.port] = x;
+        return a;
+      }, {});
+    }
   }
   return dev;
 }
@@ -110,17 +121,21 @@ module.exports.createAdmin = (user, pass) =>
   });
 
 module.exports.updateLocalIp = (d) => {
-  //console.log('db.updateLocalIp', makeLocalIp(d));
-  db.localIps.update({ ip: d.ip }, makeLocalIp(d), { upsert: true }, (e, reps, up) => {
-    //console.log('e, reps, up', e, reps, up);
-  });
+  db.localIps.update(
+    { ip: d.ip }, 
+    makeLocalIp(d), 
+    { upsert: true }, 
+    (e, reps, up) => {}
+  );
 }
  
 module.exports.updateDevice = (d) => {
-  //console.log('db.updateDevice', makeDevice(d));
-  db.devices.update({ mac: d.mac }, makeDevice(d), { upsert: true }, (e, reps, up) => {
-    //console.log('e, reps, up', e, reps, up);
-  });
+  db.devices.update(
+    { mac: d.mac }, 
+    {$set: makeDevice(d)}, 
+    { upsert: true }, 
+    (e, reps, up) => {}
+  );
 }
 
 module.exports.getDevices = () => {
