@@ -7,6 +7,7 @@ const INTERFACE = 'eth0';
 let running = false;
 let currentPingSweep = null;
 let currentPortScan = null;
+let attemptPortScan = null;
 
 let state = {
   errors: [],
@@ -139,3 +140,7 @@ module.exports.start = () => {
   portScanLoop();
   setInterval(portScanLoop, 60 * 1000);
 };
+
+module.exports.scanIp = ip => {
+  portScan(ip);
+}

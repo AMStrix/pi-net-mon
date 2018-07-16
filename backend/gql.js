@@ -73,7 +73,8 @@ let schema = buildSchema(`
 
   type Mutation {
     createAdmin(user: String!, pass: String!): String,
-    login(user: String!, pass: String!): Status
+    login(user: String!, pass: String!): Status,
+    scan(ip: String!): String
   }
 
 `);
@@ -127,7 +128,8 @@ let root = {
   broStatus: { isDeployed: false },
   status: status,
   login: login,
-  spoofStatus: () => spoof.state
+  spoofStatus: () => spoof.state,
+  scan: ({ip}) => spoof.scanIp(ip)
 };
 
 module.exports = expressGraphql({

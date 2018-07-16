@@ -1,11 +1,54 @@
 import React, { Component } from "react";
-import { Query } from 'react-apollo';
+import { Query, Mutation } from 'react-apollo';
 import gql from 'graphql-tag';
 import styled from 'styled-components';
-import { Container, List, Icon, Card, Popup } from 'semantic-ui-react';
+import { Button, Icon, Popup } from 'semantic-ui-react';
 import moment from 'moment';
 
 import SlideLabel from './SlideLabel';
+
+const DEVICES = gql`
+  query devices {
+    devices {
+      mac,
+      vendor,
+      os,
+      isSensor,
+      isGateway,
+      ips {
+        ip,
+        seen
+      }
+      ports {
+        port,
+        protocol,
+        service,
+        seen
+      }
+    }
+    spoofStatus {
+      errors,
+      pingSweep {
+        host,
+        scanStart,
+        scanTime,
+        processing
+      }
+      portScan {
+        host,
+        scanStart,
+        scanTime,
+        processing
+      }
+    }
+  }
+`;
+
+const SCAN = gql`
+  mutation scan($ip: String!) {
+    scan(ip: $ip)
+  }
+`;
 
 const itemW = 250;
 const gutter = 5;
@@ -69,26 +112,6 @@ const GridOverlay = styled.div`
   }
 `;
 
-const SPOOF_STATUS = gql`
-  query spoofStatus {
-    spoofStatus {
-      errors,
-      pingSweep {
-        host,
-        scanStart,
-        scanTime,
-        processing
-      }
-      portScan {
-        host,
-        scanStart,
-        scanTime,
-        processing
-      }
-    }
-  }
-`;
-
 function fmtDuration(ms) {
   if (ms < 1000) {
     return ms + 'ms';
@@ -127,43 +150,6 @@ const SpoofStatus = ({pingSweep, portScan}) => (
     </GridHead>
 );
 
-const DEVICES = gql`
-  query devices {
-    devices {
-      mac,
-      vendor,
-      os,
-      isSensor,
-      isGateway,
-      ips {
-        ip,
-        seen
-      }
-      ports {
-        port,
-        protocol,
-        service,
-        seen
-      }
-    }
-    spoofStatus {
-      errors,
-      pingSweep {
-        host,
-        scanStart,
-        scanTime,
-        processing
-      }
-      portScan {
-        host,
-        scanStart,
-        scanTime,
-        processing
-      }
-    }
-  }
-`;
-
 function latestIp(ips) {
   return ips.reduce((latest, ip) => {
     if (Date.parse(latest.seen) - Date.parse(ip.seen) > 0) {
@@ -197,9 +183,7 @@ const Devices = () => (
   </Query>
 );
 
-
-
-const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
+const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data) => {
   let ip = latestIp(p.ips).ip;
   let beingScanned = p.isScanning && p.activeIp === ip;
   return (
@@ -260,6 +244,12 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
       <div className='seen'>
         <Icon name='clock' />
         { moment(latestIp(p.ips).seen).from(new Date()) }
+        { !p.isScanning && <Button 
+          content='scan now' 
+          size='mini' 
+          style={{padding: '4px 6px', float: 'right'}}
+          onClick={() => scan({ variables: {ip}})} 
+        /> }
       </div>
     </GridItem>
   );
@@ -269,7 +259,11 @@ class Device extends Component {
   state = { showPorts: false };
   showPorts = () => this.setState({ showPorts: !this.state.showPorts });
   hidePorts = () => this.setState({ showPorts: false });
-  render() {return renderDevice(this)};
+  render() {return (
+    <Mutation mutation={SCAN}>
+      {(scan, {data}) => renderDevice(this, scan, data)}
+    </Mutation>
+  )};
 }
 
 export default Devices;
