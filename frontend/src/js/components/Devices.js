@@ -88,6 +88,12 @@ const GridItem = styled.div`
     font-size: 0.8em;
     color: #9a9a9a;
   }
+  ._scanButton {
+    display: none;
+  }
+  &:hover ._scanButton {
+    display: inline-block;
+  }
 `;
 const GridOverlay = styled.div`
   z-index: 100;
@@ -245,6 +251,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data) => {
         <Icon name='clock' />
         { moment(latestIp(p.ips).seen).from(new Date()) }
         { !p.isScanning && <Button 
+          className="_scanButton"
           content='scan now' 
           size='mini' 
           style={{padding: '4px 6px', float: 'right'}}
