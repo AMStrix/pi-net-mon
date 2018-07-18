@@ -25,6 +25,9 @@ let state = {
     processing: false,
     scanTime: null,
     host: null
+  },
+  spoofing: {
+
   }
 };
 
@@ -174,19 +177,21 @@ function portScan(forcedIp) {
 }
 
 
-function spoofSetup() {
+function spoofInit() {
   let fwdOn = sh.exec(
     "echo 1 > /proc/sys/net/ipv4/ip_forward ", 
     { silent: true }
   ).stdout;
   if (process.getuid() !== 0) {
-    throw new Error('spoofSetup: Must be run as root!');
+    throw new Error('spoofInit: Must be run as root!');
   }
 }
 
 function spoofable(d) {
-  if (d.ip !== thisIp() && d.ip !== thisGateway()) {
-    //console.log('i want to spoof', d.mac);
+  //console.log('latestIp', d.latestIp);
+  let ip = latestDeviceIp(d).ip;
+  if (ip !== thisIp() && ip !== thisGateway() && !spoofing[ip]) {
+    //console.log('i want to spoof', d.mac, ip);
   }
 }
 
@@ -203,18 +208,35 @@ function spoofLoop() {
 //Ether()/ARP(op="who-has",hwdst=dfgwMAC,pdst=dfgw,psrc=victimIP)
 //Ether()/ARP(op="who-has",hwdst=victimMac,pdst=row[2],psrc=dfgw)
 // this mac: b8:27:eb:e2:f5:fe
-function arpSpoof(a, b) {
-  let a = '192.168.0.111'; // b8:27:eb:cb:37:2e
-  let b = '192.168.0.1';
-  let bMac = '98:de:d0:84:b3:98';
-
-  let child = childProcess.spawn('arpspoof',['-i', 'eth0', '-t', a, '-r', b]);
-  child.stdout.on('data', d => console.log('DATA', d.toString()));
-  child.stderr.on('data', e => console.log('ERROR', e.toString()));
-  child.on('close', x => console.log('CLOSE', x));
-  setTimeout(() => child.kill('SIGINT'), 15000);
+function arpSpoof(ip) {
+  if (ip === thisIp()) {
+    throw Error('cannot spoof pi-net-mon sensor');
+  } else if (ip === thisGateway()) {
+    throw Error('cannot spoof gateway');
+  }
+  if (spoofing[ip]) { return; }
+/*
+  let child = childProcess.spawn('arpspoof',['-i', 'eth0', '-t', ip, '-r', thisGateway()]);
+  spoofing[ip] = child;
+  //child.stdout.on('data', d => console.log('DATA', d.toString()));
+  //child.stderr.on('data', e => console.log('ERROR', e.toString()));
+  child.on('close', x => {
+    console.log('CLOSE arpspoof', ip, 'code: ', x);
+    spoofing[ip] = null; // clear the child after close
+  });
+  */
+  //setTimeout(() => child.kill('SIGINT'), 35000);
 }
-//arpSpoof();
+
+function cleanupArpSpoof() {
+  return new Promise((res, rej) => {
+    Object.values(spoofing).forEach(child => {
+      console.log('CLEANUP');
+      child.kill('SIGINT');
+      res();
+    });
+  });
+}
 
 function updateState() {
   if (currentPingSweep) {
@@ -242,3 +264,7 @@ module.exports.start = () => {
 module.exports.scanIp = ip => {
   return portScan(ip);
 }
+
+module.exports.cleanup = cleanupArpSpoof;
+
+spoofInit();
