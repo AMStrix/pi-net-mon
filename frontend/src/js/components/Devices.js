@@ -10,34 +10,32 @@ import SlideLabel from './SlideLabel';
 const DEVICES = gql`
   query devices {
     devices {
-      mac,
-      vendor,
-      os,
-      isSensor,
-      isGateway,
-      ips {
-        ip,
-        seen
-      }
+      mac
+      vendor
+      os
+      isSensor
+      isGateway
+      latestIp { ip seen }
+      ips { ip seen }
       ports {
-        port,
-        protocol,
-        service,
+        port
+        protocol
+        service
         seen
       }
     }
     spoofStatus {
-      errors,
+      errors
       pingSweep {
-        host,
-        scanStart,
-        scanTime,
+        host
+        scanStart
+        scanTime
         processing
       }
       portScan {
-        host,
-        scanStart,
-        scanTime,
+        host
+        scanStart
+        scanTime
         processing
       }
     }
@@ -181,16 +179,6 @@ const SpoofStatus = ({pingSweep, portScan}) => (
     </GridHead>
 );
 
-function latestIp(ips) {
-  return ips.reduce((latest, ip) => {
-    if (Date.parse(latest.seen) - Date.parse(ip.seen) > 0) {
-      return latest;
-    } else {
-      return ip;
-    }
-  });
-}
-
 const Devices = () => (
   <Query query={DEVICES} pollInterval={5000}>
     {({ loading, error, data }) => {
@@ -215,7 +203,7 @@ const Devices = () => (
 );
 
 const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loading) => {
-  let ip = latestIp(p.ips).ip;
+  let ip = p.latestIp.ip;
   let beingScanned = p.isScanning && p.activeIp === ip;
   return (
     <GridItem>
@@ -242,7 +230,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
               color='#ff6c00'
             /> : ip
         } 
-        { p.ports && p.ports.length && 
+        { p.ports && p.ports.length > 1 && 
           <SlideLabel 
             content={p.ports.length} 
             label='open ports' 
@@ -260,7 +248,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
       <hr />
       <div className='seen'>
         <Icon name='clock' />
-        { moment(latestIp(p.ips).seen).from(new Date()) }
+        { moment(p.latestIp.seen).from(new Date()) }
         { <Button 
           className="_scanButton"
           content='scan now' 

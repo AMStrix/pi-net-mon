@@ -139,20 +139,16 @@ module.exports.updateDevice = (d) => {
       { mac: d.mac }, 
       makeDevice(d, old), 
       { upsert: true }, 
-      (e, reps, up) => {
-        console.log('reps', reps);
-        console.log('up', up);
-      }
+      (e, replacementCount, upserted) => {}
     );
   })
 
 }
 
-module.exports.getDevices = () => {
-  return new Promise((res, rej) => {
+module.exports.getDevices = () => 
+  new Promise((res, rej) => {
     db.devices.find({}, (e, ds) => e ? rej(e) : res(ds));
   });
-}
 
 // mutate in latestIp
 // db.devices.find({}, (e,ds) => {

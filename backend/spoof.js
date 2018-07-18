@@ -101,21 +101,11 @@ function pingSweep() {
   }
 }
 
-function latestDeviceIp(dev) {
-  return Object.values(dev.ips).reduce((latest, ip) => {
-    if (latest.seen - ip.seen > 0) {
-      return latest;
-    } else {
-      return ip;
-    }
-  });
-}
-
 function portScanLoop() {
   if (currentPortScan) { return; } // one at a time
   db.getDevices().then(ds => {
     ds.forEach(d => {
-      portScanIfStale(latestDeviceIp(d).ip, d.lastPortscanTime);
+      portScanIfStale(d.latestIp.ip, d.lastPortscanTime);
     })
   });
 }
@@ -189,9 +179,9 @@ function spoofInit() {
 
 function spoofable(d) {
   //console.log('latestIp', d.latestIp);
-  let ip = latestDeviceIp(d).ip;
+  let ip = d.latestIp.ip;
   if (ip !== thisIp() && ip !== thisGateway() && !spoofing[ip]) {
-    //console.log('i want to spoof', d.mac, ip);
+    console.log('i want to spoof', d.mac, ip);
   }
 }
 
@@ -203,11 +193,6 @@ function spoofLoop() {
   });
 }
 
-// echo 1 > /proc/sys/net/ipv4/ip_forward 
-// sudo /opt/nsm/bro/bin/broctl deploy
-//Ether()/ARP(op="who-has",hwdst=dfgwMAC,pdst=dfgw,psrc=victimIP)
-//Ether()/ARP(op="who-has",hwdst=victimMac,pdst=row[2],psrc=dfgw)
-// this mac: b8:27:eb:e2:f5:fe
 function arpSpoof(ip) {
   if (ip === thisIp()) {
     throw Error('cannot spoof pi-net-mon sensor');

@@ -36,6 +36,7 @@ let schema = buildSchema(`
     mac: String!,
     vendor: String,
     os: String,
+    latestIp: Ip,
     ips: [Ip],
     ports: [Port],
     isSensor: Boolean,
@@ -93,6 +94,7 @@ function devicesToGql(devices) {
     (d.ports = Object.values(d.ports).map(x => dateToIsoString(x, 'seen'))));
   devices.forEach(d => d.lastPortscanTime && 
     (d.lastPortscanTime = d.lastPortscanTime.toISOString()));
+  devices.forEach(d => d.latestIp = dateToIsoString(d.latestIp, 'seen'));
   return devices;
 };
 
