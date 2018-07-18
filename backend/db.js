@@ -128,6 +128,8 @@ module.exports.updateLocalIp = (d) => {
 }
  
 module.exports.updateDevice = (d) => {
+  //console.log('TODO create updatePing and updatePorts');
+  //console.log('TODO mark devices that exist but did not return in pingsweep/scan as down, lastDownTime')
   db.devices.update(
     { mac: d.mac }, 
     {$set: makeDevice(d)}, 

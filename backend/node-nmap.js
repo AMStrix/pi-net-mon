@@ -236,7 +236,7 @@ class NmapScan extends EventEmitter {
 
 class QuickScan extends NmapScan {
   constructor(range) {
-    super(range, '-sP');
+    super(range, '-sn');
   }
 }
 class OsAndPortScan extends NmapScan {

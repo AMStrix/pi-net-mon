@@ -18,7 +18,8 @@ const BRO_DEPS = [
   "git", 
   "nmap", 
   "tcpdump", 
-  "texinfo"
+  "texinfo",
+  "dsniff" // arpspoof
 ];
 
 let isInstalling = false;

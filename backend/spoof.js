@@ -1,3 +1,4 @@
+const childProcess = require('child_process');
 const sh = require('shelljs');
 const nmap = require('./node-nmap');
 
@@ -9,6 +10,8 @@ let running = false;
 let currentPingSweep = null;
 let currentPortScan = null;
 let attemptPortScan = null;
+const portScanQueue = [];
+let spoofing = {};
 
 let state = {
   errors: [],
@@ -25,33 +28,48 @@ let state = {
   }
 };
 
+function memoizePeriodic(fn) {
+  let cache = {};
+  return (...args) => {
+    if (cache.v && Date.now() - cache.t < 1000 * 60 * 60) {
+      return cache.v;
+    } else {
+      let res = fn();
+      cache.v = res;
+      cache.t = Date.now();
+      return cache.v;
+    }
+  }
+}
+
 function addError(e) {
   console.log('ERROR spoof.js', e);
   state.errors.push(e.toString());
 }
 
-function thisMac() {
+const thisMac = memoizePeriodic(() => {
   let ifconfig = sh.exec("ifconfig eth0", {silent:true}).stdout;
   let macSearch = /ether\s((\w{2}:){5}\w{2})/.exec(ifconfig);
   return macSearch.length === 3 ? macSearch[1].toUpperCase() : null;
-}
+});
 
-function thisIp() {
+const thisIp = memoizePeriodic(() => {
   let ifconfig = sh.exec("ifconfig eth0", {silent:true}).stdout;
   let ipSearch = /inet\s([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/.exec(ifconfig);
   return ipSearch.length === 2 ? ipSearch[1] : null;
-}
+});
 
-function localRange() {
-  let ip = thisIp();
-  return ip ? ip + '/24' : null;
-}
+const localRange = memoizePeriodic(() => {
+  let iproute = sh.exec('ip route', {silent:true}).stdout;
+  let search = /[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\/[0-9]+/.exec(iproute);
+  return search.length === 1 ? search[0] : null;
+});
 
-function thisGateway() {
+const thisGateway = memoizePeriodic(() => {
   let iproute = sh.exec('ip route', {silent:true}).stdout;
   let gwSearch = /default\svia\s([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/.exec(iproute);
   return gwSearch.length === 2 ? gwSearch[1] : null;
-}
+});
 
 function pingSweep() {
   let range = localRange();
@@ -109,21 +127,29 @@ function isHostUp(ip, cb) {
 function portScanIfStale(ip, lastScanTime) {
   let now = new Date();
   if (!lastScanTime || now - lastScanTime > PORTSCAN_STALE) {
-    portScan(ip);
+    portScanQueue.push(ip);
+    portScan();
   }
 }
 
-function portScan(ip) {
+function portScan(forcedIp) {
   return new Promise((res, rej) => {
     if (currentPortScan) { 
       res('portscan in progress');
       return; 
+    }
+    let popped = portScanQueue.pop();
+    let ip = forcedIp || popped;
+    if (!ip) {
+      res(); // queue empty
+      return;
     }
     currentPortScan = true; // lock-in now, will get set to nmap obj
     isHostUp(ip, isUp => {
       if (!isUp) {
         currentPortScan = null; // unlock
         res('host down');
+        setTimeout(portScan, 0);
       }
       if (isUp) {
         res();
@@ -140,11 +166,55 @@ function portScan(ip) {
             db.updateDevice(d);
           });
           currentPortScan = null;
+          setTimeout(portScan, 0); // try to consume queue
         })
       }
     });
   });
 }
+
+
+function spoofSetup() {
+  let fwdOn = sh.exec(
+    "echo 1 > /proc/sys/net/ipv4/ip_forward ", 
+    { silent: true }
+  ).stdout;
+  if (process.getuid() !== 0) {
+    throw new Error('spoofSetup: Must be run as root!');
+  }
+}
+
+function spoofable(d) {
+  if (d.ip !== thisIp() && d.ip !== thisGateway()) {
+    //console.log('i want to spoof', d.mac);
+  }
+}
+
+function spoofLoop() {
+  db.getDevices().then(ds => {
+    ds.forEach(d => {
+      spoofable(d) && arpSpoof(d.ip, thisGateway());
+    })
+  });
+}
+
+// echo 1 > /proc/sys/net/ipv4/ip_forward 
+// sudo /opt/nsm/bro/bin/broctl deploy
+//Ether()/ARP(op="who-has",hwdst=dfgwMAC,pdst=dfgw,psrc=victimIP)
+//Ether()/ARP(op="who-has",hwdst=victimMac,pdst=row[2],psrc=dfgw)
+// this mac: b8:27:eb:e2:f5:fe
+function arpSpoof(a, b) {
+  let a = '192.168.0.111'; // b8:27:eb:cb:37:2e
+  let b = '192.168.0.1';
+  let bMac = '98:de:d0:84:b3:98';
+
+  let child = childProcess.spawn('arpspoof',['-i', 'eth0', '-t', a, '-r', b]);
+  child.stdout.on('data', d => console.log('DATA', d.toString()));
+  child.stderr.on('data', e => console.log('ERROR', e.toString()));
+  child.on('close', x => console.log('CLOSE', x));
+  setTimeout(() => child.kill('SIGINT'), 15000);
+}
+//arpSpoof();
 
 function updateState() {
   if (currentPingSweep) {
@@ -165,6 +235,8 @@ module.exports.start = () => {
   setInterval(pingSweep, 60 * 1000 * 20);
   portScanLoop();
   setInterval(portScanLoop, 60 * 1000);
+  spoofLoop();
+  setInterval(spoofLoop, 60 * 1000);
 };
 
 module.exports.scanIp = ip => {
