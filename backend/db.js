@@ -1,6 +1,7 @@
 const util = require('util');
 const Nedb = require('nedb');
 const bcrypt = require('bcrypt');
+const _ = require('lodash');
 
 const db = {
   users: new Nedb({ 
@@ -29,9 +30,6 @@ db.localIps.ensureIndex({ fieldName: 'ip', uniuqe: true },
   e => e && console.log(e));
 
 
-// db.users.find({}, (e, d) => d.forEach(console.log));
-// db.devices.remove({}, {multi: true}); 
-
 // data manipulation
 function makeLocalIp(d) {
   let ip = { 
@@ -50,33 +48,41 @@ function makeLocalIp(d) {
 
 function ipToKey(ip) { return ip.replace(/\./g, '-'); }
 
-function makeDevice(d) {
-  let dev = null;
+function deviceRawToDb(d) {
   let now = new Date();
-  if (d.mac) {
-    dev = {
-      mac: d.mac,
-      ips: {}
-    };
-    d.vendor && (dev.vendor = d.vendor);
-    d.osNmap && (dev.os = d.osNmap);
-    d.isSensor && (dev.isSensor = true);
-    d.isGateway && (dev.isGateway = true);
-    d.lastPortscanTime && (dev.lastPortscanTime = d.lastPortscanTime);
-    dev.ips[ipToKey(d.ip)] = {
-      ip: d.ip,
-      seen: now
-    };
-    if (d.openPorts && d.openPorts.length > 0) {
-      dev.ports = d.openPorts.reduce((a, x) => {
-        x.seen = now;
-        a[x.port] = x;
-        return a;
-      }, {});
-    }
+  d.mac = d.mac.toUpperCase();
+  if (d.ip) {
+    let ipObj = { ip: d.ip, seen: now };
+    d.latestIp = ipObj;
+    d.ips = {};
+    d.ips[ipToKey(d.ip)] = ipObj;
+    delete d.ip;
   }
-  return dev;
+  if (d.osNmap) {
+    d.os = d.osNmap;
+    delete d.osNmap;
+  }
+  if (d.openPorts) {
+    d.ports = d.openPorts.reduce((a, x) => {
+      x.seen = now;
+      a[x.port] = x;
+      return a;
+    }, {});
+    delete d.openPorts;
+  }
+  return d;
 }
+
+function makeDevice(d, old) {
+  let defaultDevice = { 
+    ips: {},
+    ports: {}
+  }; 
+  let inbound = deviceRawToDb(d)
+  let updated = _.defaultsDeep(inbound, old || {}, defaultDevice);
+  return updated;
+}
+
 
 // exports
 module.exports = {};
@@ -126,16 +132,20 @@ module.exports.updateLocalIp = (d) => {
     (e, reps, up) => {}
   );
 }
- 
+
 module.exports.updateDevice = (d) => {
-  //console.log('TODO create updatePing and updatePorts');
-  //console.log('TODO mark devices that exist but did not return in pingsweep/scan as down, lastDownTime')
-  db.devices.update(
-    { mac: d.mac }, 
-    {$set: makeDevice(d)}, 
-    { upsert: true }, 
-    (e, reps, up) => {}
-  );
+  db.devices.findOne({ mac: d.mac }, (e, old) => {
+    db.devices.update(
+      { mac: d.mac }, 
+      makeDevice(d, old), 
+      { upsert: true }, 
+      (e, reps, up) => {
+        console.log('reps', reps);
+        console.log('up', up);
+      }
+    );
+  })
+
 }
 
 module.exports.getDevices = () => {
@@ -144,9 +154,17 @@ module.exports.getDevices = () => {
   });
 }
 
-
-
-
+// mutate in latestIp
+// db.devices.find({}, (e,ds) => {
+//   ds.forEach(d => {
+//     console.log(d.mac, d.latestIp);
+//     //console.log(d.mac, d.ips);
+//     if (!d.latestIp) {
+//       d.latestIp = Object.values(d.ips)[0];
+//       db.devices.update({ mac: d.mac }, d, console.log);
+//     }
+//   })
+// })
 
 
 
