@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { Button, Icon, Popup } from 'semantic-ui-react';
 import moment from 'moment';
 
+import Grid from './Grid';
 import SlideLabel from './SlideLabel';
 
 const SPOOF_STATUS = `
@@ -54,100 +55,6 @@ const SCAN = gql`
   }
 `;
 
-const itemW = 250;
-const gutter = 5;
-const padding = 8;
-const boxShadow = '1px 1px 5px #b1b1b1';
-
-const Grid = styled.div`
-  align-self: flex-start;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-`;
-const GridHead = styled.div`
-  width: 100%;
-  background: white;
-  box-shadow: ${boxShadow};
-  margin: ${gutter}px;
-  padding: ${padding}px;
-`;
-const GridItem = styled.div`
-  position: relative;
-  width: ${itemW}px;
-  margin: ${gutter}px;
-  padding: ${padding * (1/2)}px ${padding}px ${padding * (3/8)}px;
-  background: white;
-  box-shadow: ${boxShadow};
-  & hr {
-    border-width: 0.5px;
-    border-style: solid;
-    border-color: #dcdcdc;
-    margin: 3px -${padding}px 3px;
-  }
-  & .extra {
-    font-size: 0.8em;
-  }
-  & .seen {
-    font-size: 0.8em;
-    color: #9a9a9a;
-  }
-  ._scanButton {
-    visibility: hidden;
-    opacity: 0;
-    transition: visibility 0s, opacity 300ms linear;
-  }
-  &:hover ._scanButton {
-    visibility: visible;
-    opacity: 1;
-  }
-`;
-const GridOverlay = styled.div`
-  z-index: 100;
-  position: absolute;
-  top: 0; bottom: 0; left: 0; right: 0;
-  background: rgba(0,0,0,0.9);
-  color: white;
-  & ._scroll {
-    position: absolute;
-    top: 0; bottom: 0; left: 0; right: 0;
-    overflow-y: auto;
-    padding: 4px 3px 0 6px;
-  }
-  & ._close {
-    z-index: 1;
-    margin: 4px;
-    font-size: 16px;
-    position: absolute;
-    right: 0;
-  }
-  & ._close:hover {
-    cursor: pointer;
-  }
-  & table { 
-    width: 100%; 
-    th { text-align: left; }
-  }
-`;
-const GridOverlayNotice = styled.div`
-  height: 100%;
-  display: flex;
-  font-size: 1rem;
-  flex-direction: column;
-  & ._content {
-    display: flex;
-    align-items: center;
-    flex-grow: 1;
-    & > div {
-      text-align: center;
-      flex-grow: 1;
-    }
-  }
-  & ._controls {
-    margin-bottom: 6px;
-  }
-`;
-
 function fmtDuration(ms) {
   if (ms < 1000) {
     return ms + 'ms';
@@ -167,7 +74,7 @@ function fromNow(when) {
 }
 
 const SpoofStatus = ({pingSweep, portScan}) => (
-    <GridHead>
+    <Grid.Head>
       <div>
         <Icon name='target' disabled={!pingSweep.processing}/>
         {pingSweep.processing ? 
@@ -182,7 +89,7 @@ const SpoofStatus = ({pingSweep, portScan}) => (
           `portscan: ${fromNow(portScan.scanStart)} / ${fmtDuration(portScan.scanTime||0)}` 
         }
       </div>
-    </GridHead>
+    </Grid.Head>
 );
 
 const Devices = () => (
@@ -212,7 +119,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
   let ip = p.latestIp.ip;
   let beingScanned = p.isScanning && p.activeIp === ip;
   return (
-    <GridItem>
+    <Grid.Item>
       { state.showPorts && <PortsOverlay ports={p.ports} onHide={hidePorts} /> }
       <div className='mac'>
         { p.isSensor && 
@@ -277,7 +184,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
           </span>
         } />}
       </div>
-    </GridItem>
+    </Grid.Item>
   );
 } 
 
@@ -303,12 +210,12 @@ class Device extends Component {
 }
 
 const Overlay = ({onHide, children}) => (
-  <GridOverlay>
+  <Grid.Overlay>
     <Icon name='close' className='_close' onClick={onHide}/>
     <div className='_scroll'>
       { children }
     </div>
-  </GridOverlay>
+  </Grid.Overlay>
 );
 
 const PortsOverlay = ({ports, onHide}) => (
@@ -338,7 +245,7 @@ class NoticeOverlay extends Component {
     if (!this.state.show) { return null; }
     return (
       <Overlay onHide={this.handleHide.bind(this)}>
-        <GridOverlayNotice>
+        <Grid.Overlay.Notice>
           <div className='_content'><div>{content}</div></div>
           <Button 
             inverted
@@ -347,7 +254,7 @@ class NoticeOverlay extends Component {
             size='mini' 
             onClick={this.handleHide.bind(this)} 
           />
-        </GridOverlayNotice>
+        </Grid.Overlay.Notice>
       </Overlay>
     );
   }
