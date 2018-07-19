@@ -2,6 +2,7 @@ const childProcess = require('child_process');
 const sh = require('shelljs');
 const nmap = require('./node-nmap');
 
+const f = require('./f');
 const db = require('./db');
 
 const PORTSCAN_STALE = 60 * 1000 * 60 * 12;
@@ -31,44 +32,30 @@ let state = {
   }
 };
 
-function memoizePeriodic(fn) {
-  let cache = {};
-  return (...args) => {
-    if (cache.v && Date.now() - cache.t < 1000 * 60 * 60) {
-      return cache.v;
-    } else {
-      let res = fn();
-      cache.v = res;
-      cache.t = Date.now();
-      return cache.v;
-    }
-  }
-}
-
 function addError(e) {
   console.log('ERROR spoof.js', e);
   state.errors.push(e.toString());
 }
 
-const thisMac = memoizePeriodic(() => {
+const thisMac = f.memoizePeriodic(() => {
   let ifconfig = sh.exec("ifconfig eth0", {silent:true}).stdout;
   let macSearch = /ether\s((\w{2}:){5}\w{2})/.exec(ifconfig);
   return macSearch.length === 3 ? macSearch[1].toUpperCase() : null;
 });
 
-const thisIp = memoizePeriodic(() => {
+const thisIp = f.memoizePeriodic(() => {
   let ifconfig = sh.exec("ifconfig eth0", {silent:true}).stdout;
   let ipSearch = /inet\s([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/.exec(ifconfig);
   return ipSearch.length === 2 ? ipSearch[1] : null;
 });
 
-const localRange = memoizePeriodic(() => {
+const localRange = f.memoizePeriodic(() => {
   let iproute = sh.exec('ip route', {silent:true}).stdout;
   let search = /[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\/[0-9]+/.exec(iproute);
   return search.length === 1 ? search[0] : null;
 });
 
-const thisGateway = memoizePeriodic(() => {
+const thisGateway = f.memoizePeriodic(() => {
   let iproute = sh.exec('ip route', {silent:true}).stdout;
   let gwSearch = /default\svia\s([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/.exec(iproute);
   return gwSearch.length === 2 ? gwSearch[1] : null;

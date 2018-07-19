@@ -34,10 +34,11 @@ Grid.Item = styled.div`
     border-color: #dcdcdc;
     margin: 3px -${padding}px 3px;
   }
-  & .extra {
+  & ._top {}
+  & ._middle {
     font-size: 0.8em;
   }
-  & .seen {
+  & ._bottom {
     font-size: 0.8em;
     color: #9a9a9a;
   }

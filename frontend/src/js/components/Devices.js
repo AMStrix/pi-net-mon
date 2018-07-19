@@ -121,7 +121,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
   return (
     <Grid.Item>
       { state.showPorts && <PortsOverlay ports={p.ports} onHide={hidePorts} /> }
-      <div className='mac'>
+      <div className='_top'>
         { p.isSensor && 
           <Popup 
             trigger={<Icon name='eye' style={{float:'right'}} />} 
@@ -142,7 +142,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
         }
         { p.mac }
       </div>
-      <div className='ip'>
+      <div className='_top'>
         { beingScanned ? <SlideLabel
               content={ip}
               label={'portscanning...'}
@@ -160,12 +160,12 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
         }
       </div>
       <hr />
-      <div className='extra'>
+      <div className='_middle'>
         {p.vendor || '(no vendor discovered)'}<br/>
         {p.os || '(os not detected)'}
       </div>
       <hr />
-      <div className='seen'>
+      <div className='_bottom'>
         <Icon name='clock' />
         { moment(p.latestIp.seen).from(new Date()) }
         { <Button 

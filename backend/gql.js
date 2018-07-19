@@ -5,82 +5,87 @@ let {
 
 let install = require('./install');
 let spoof = require('./spoof');
+let bro = require('./bro');
 let db = require('./db');
 
 spoof.start();
 
 let schema = buildSchema(`
   type InstallStatus {
-    hasAdmin: Boolean,
-    hasBro: Boolean,
+    hasAdmin: Boolean
+    hasBro: Boolean
     steps: [InstallStep]
   }
   type InstallStep {
-    disp: String,
-    messages: [String],
-    processing: Boolean,
-    complete: Boolean,
+    disp: String
+    messages: [String]
+    processing: Boolean
+    complete: Boolean
     error: String
   }
   type Ip {
-    ip: String!,
+    ip: String!
     seen: String
   }
   type Port {
-    port: Int,
-    protocol: String,
-    service: String,
+    port: Int
+    protocol: String
+    service: String
     seen: String
   }
   type Device {
-    mac: String!,
-    vendor: String,
-    os: String,
-    latestIp: Ip,
-    ips: [Ip],
-    ports: [Port],
-    isSensor: Boolean,
-    isGateway: Boolean,
-    isSpoof: Boolean,
+    mac: String!
+    vendor: String
+    os: String
+    latestIp: Ip
+    ips: [Ip]
+    ports: [Port]
+    isSensor: Boolean
+    isGateway: Boolean
+    isSpoof: Boolean
     lastPortscanTime: String
   }
   type BroStatus {
+    version: String
     isDeployed: Boolean
+    status: String
+    errors: [String]
   }
   type Status {
-    authed: Boolean,
+    authed: Boolean
     authError: String
   }
   type ScanStatus {
-    host: String,
-    scanStart: String,
-    scanTime: Int,
+    host: String
+    scanStart: String
+    scanTime: Int
     processing: Boolean
   }
   type SpoofStatus {
-    errors: [String],
-    pingSweep: ScanStatus,
+    errors: [String]
+    pingSweep: ScanStatus
     portScan: ScanStatus
   }
   type ScanResult {
-    spoofStatus: SpoofStatus,
+    spoofStatus: SpoofStatus
     scanError: String
   }
 
 
   type Query {
-    installStatus: InstallStatus,
-    installBro: Boolean,
-    broStatus: BroStatus,
-    status: Status,
-    devices: [Device],
+    installStatus: InstallStatus
+    installBro: Boolean
+    broStatus: BroStatus
+    status: Status
+    devices: [Device]
     spoofStatus: SpoofStatus
   }
 
   type Mutation {
-    createAdmin(user: String!, pass: String!): String,
-    login(user: String!, pass: String!): Status,
+    createAdmin(user: String!, pass: String!): String
+    login(user: String!, pass: String!): Status
     scan(ip: String!): ScanResult
+    deployBro: BroStatus
   }
 
 `);
@@ -132,7 +137,7 @@ let root = {
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),
   installBro: install.install,
   devices: () => db.getDevices().then(devicesToGql),
-  broStatus: { isDeployed: false },
+  broStatus: bro.getState,
   status: status,
   login: login,
   spoofStatus: () => spoof.state,
@@ -141,7 +146,8 @@ let root = {
       scanError: e,
       spoofStatus: spoof.state
     };
-  })
+  }),
+  deployBro: bro.deploy
 };
 
 module.exports = expressGraphql({
