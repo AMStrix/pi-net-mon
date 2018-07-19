@@ -41,6 +41,7 @@ let schema = buildSchema(`
     ports: [Port],
     isSensor: Boolean,
     isGateway: Boolean,
+    isSpoof: Boolean,
     lastPortscanTime: String
   }
   type BroStatus {
@@ -61,6 +62,10 @@ let schema = buildSchema(`
     pingSweep: ScanStatus,
     portScan: ScanStatus
   }
+  type ScanResult {
+    spoofStatus: SpoofStatus,
+    scanError: String
+  }
 
 
   type Query {
@@ -75,7 +80,7 @@ let schema = buildSchema(`
   type Mutation {
     createAdmin(user: String!, pass: String!): String,
     login(user: String!, pass: String!): Status,
-    scan(ip: String!): String
+    scan(ip: String!): ScanResult
   }
 
 `);
@@ -131,7 +136,12 @@ let root = {
   status: status,
   login: login,
   spoofStatus: () => spoof.state,
-  scan: ({ip}) => spoof.scanIp(ip)
+  scan: ({ip}) => spoof.scanIp(ip).then((e) => {
+    return {
+      scanError: e,
+      spoofStatus: spoof.state
+    };
+  })
 };
 
 module.exports = expressGraphql({

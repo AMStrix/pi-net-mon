@@ -7,6 +7,22 @@ import moment from 'moment';
 
 import SlideLabel from './SlideLabel';
 
+const SPOOF_STATUS = `
+    errors
+    pingSweep {
+      host
+      scanStart
+      scanTime
+      processing
+    }
+    portScan {
+      host
+      scanStart
+      scanTime
+      processing
+    }
+`;
+
 const DEVICES = gql`
   query devices {
     devices {
@@ -15,6 +31,7 @@ const DEVICES = gql`
       os
       isSensor
       isGateway
+      isSpoof
       latestIp { ip seen }
       ips { ip seen }
       ports {
@@ -24,27 +41,16 @@ const DEVICES = gql`
         seen
       }
     }
-    spoofStatus {
-      errors
-      pingSweep {
-        host
-        scanStart
-        scanTime
-        processing
-      }
-      portScan {
-        host
-        scanStart
-        scanTime
-        processing
-      }
-    }
+    spoofStatus {${SPOOF_STATUS}}
   }
 `;
 
 const SCAN = gql`
   mutation scan($ip: String!) {
-    scan(ip: $ip)
+    scan(ip: $ip) {
+      spoofStatus {${SPOOF_STATUS}}
+      scanError
+    }
   }
 `;
 
@@ -209,19 +215,25 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
     <GridItem>
       { state.showPorts && <PortsOverlay ports={p.ports} onHide={hidePorts} /> }
       <div className='mac'>
-        {p.isSensor && 
+        { p.isSensor && 
           <Popup 
             trigger={<Icon name='eye' style={{float:'right'}} />} 
             content='pi-net-mon sensor'
           />
         }
-        {p.isGateway && 
+        { p.isGateway && 
           <Popup 
             trigger={<Icon name='hdd' style={{float: 'right'}} />} 
             content='gateway' 
           />
         }
-        {p.mac}
+        { !p.isSensor && !p.isGateway && 
+          <Popup
+            trigger={<Icon name='asterisk' disabled={!p.isSpoof} style={{float: 'right'}} />}
+            content={p.isSpoof ? 'arp spoofing on' : 'arp spoofing off, not monitoring traffic'}
+          />
+        }
+        { p.mac }
       </div>
       <div className='ip'>
         { beingScanned ? <SlideLabel
@@ -230,7 +242,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
               color='#ff6c00'
             /> : ip
         } 
-        { p.ports && p.ports.length > 1 && 
+        { p.ports && p.ports.length > 0 && 
           <SlideLabel 
             content={p.ports.length} 
             label='open ports' 
@@ -258,10 +270,10 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
           style={{padding: '4px 6px', float: 'right'}}
           onClick={() => scan({ variables: {ip}})} 
         /> }
-        { data && data.scan && <NoticeOverlay content={
+        { data && data.scan.scanError && <NoticeOverlay content={
           <span>
             <Icon name='warning' />
-            { data.scan }
+            { data.scan.scanError }
           </span>
         } />}
       </div>
@@ -274,7 +286,17 @@ class Device extends Component {
   showPorts = () => this.setState({ showPorts: !this.state.showPorts });
   hidePorts = () => this.setState({ showPorts: false });
   render() {return (
-    <Mutation mutation={SCAN}>
+    <Mutation 
+      mutation={SCAN}
+      update={(cache, { data: {scan}}) => {
+        const query = cache.readQuery({ query: DEVICES });
+        query.spoofStatus = scan.spoofStatus;
+        cache.writeQuery({
+          query: DEVICES,
+          data: query
+        });
+      }}
+    >
       {(scan, {data, loading}) => renderDevice(this, scan, data, loading)}
     </Mutation>
   )};

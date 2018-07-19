@@ -150,6 +150,7 @@ function portScan(forcedIp) {
         state.portScan.host = ip;
         state.portScan.processing = true;
         currentPortScan = new nmap.OsAndPortScan(ip);
+        currentPortScan.on('error', addError);
         currentPortScan.on('complete', ds => {
           state.portScan.processing = false;
           state.portScan.scanTime = currentPortScan.scanTime;
@@ -177,19 +178,18 @@ function spoofInit() {
   }
 }
 
-function spoofable(d) {
-  //console.log('latestIp', d.latestIp);
-  let ip = d.latestIp.ip;
-  if (ip !== thisIp() && ip !== thisGateway() && !spoofing[ip]) {
-    console.log('i want to spoof', d.mac, ip);
-  }
+function spoofable(ip) {
+  return ip !== thisIp() && ip !== thisGateway() && !spoofing[ip];
 }
 
 function spoofLoop() {
-  db.getDevices().then(ds => {
-    ds.forEach(d => {
-      spoofable(d) && arpSpoof(d.ip, thisGateway());
-    })
+  db.getDevices({ isSpoof: true }).then(ds => {
+    //ds.forEach(d => console.log('isSpoof', d.mac));
+    ds.forEach(d => arpSpoof(d.latestIp.ip));
+  });
+  db.getDevices({ isSpoof: false }).then(ds => {
+    const kill = spoofChild => spoofChild && spoofChild.kill('SIGINT');
+    ds.forEach(d => kill(spoofing[d.latestIp.ip]));
   });
 }
 
@@ -199,9 +199,10 @@ function arpSpoof(ip) {
   } else if (ip === thisGateway()) {
     throw Error('cannot spoof gateway');
   }
-  if (spoofing[ip]) { return; }
-/*
-  let child = childProcess.spawn('arpspoof',['-i', 'eth0', '-t', ip, '-r', thisGateway()]);
+  if (!spoofable(ip)) { return; }
+
+  let args = ['-i', 'eth0', '-t', ip, '-r', thisGateway()];
+  let child = childProcess.spawn('arpspoof', args);
   spoofing[ip] = child;
   //child.stdout.on('data', d => console.log('DATA', d.toString()));
   //child.stderr.on('data', e => console.log('ERROR', e.toString()));
@@ -209,18 +210,19 @@ function arpSpoof(ip) {
     console.log('CLOSE arpspoof', ip, 'code: ', x);
     spoofing[ip] = null; // clear the child after close
   });
-  */
-  //setTimeout(() => child.kill('SIGINT'), 35000);
 }
+//arpSpoof('192.168.0.101');
+//arpSpoof('192.168.0.111');
+db.updateDevice({ mac: 'B8:27:EB:CB:37:2E', isSpoof: true });
 
 function cleanupArpSpoof() {
-  return new Promise((res, rej) => {
-    Object.values(spoofing).forEach(child => {
-      console.log('CLEANUP');
+  let kills = Object.values(spoofing).map(child =>
+    new Promise((res, rej) => {
+      child.on('close', res);
       child.kill('SIGINT');
-      res();
-    });
-  });
+    })
+  );
+  return Promise.all(kills);
 }
 
 function updateState() {
@@ -250,6 +252,6 @@ module.exports.scanIp = ip => {
   return portScan(ip);
 }
 
-module.exports.cleanup = cleanupArpSpoof;
+module.exports.onExit = cleanupArpSpoof;
 
 spoofInit();

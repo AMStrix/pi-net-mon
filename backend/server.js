@@ -15,4 +15,15 @@ app.use((req, res, next) => {
 app.use('/graphql', gql);
 app.listen(4000, () => console.log('GraphQL started on localhost:4000/graphql'));
 
-process.on('SIGINT', () => spoof.cleanup().then(process.exit(0)));
+
+async function handleExit(signal) {
+  console.log(`*** pi-net-mon shutting down (${signal}) ***`);
+  spoof.onExit().then(() => process.exit());
+}
+
+function handleSignal(signal, fn) {
+  process.on(signal, () => fn(signal));
+}
+handleSignal('SIGTERM', handleExit);
+handleSignal('SIGINT', handleExit);
+handleSignal('SIGHUP', handleExit);

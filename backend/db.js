@@ -76,7 +76,8 @@ function deviceRawToDb(d) {
 function makeDevice(d, old) {
   let defaultDevice = { 
     ips: {},
-    ports: {}
+    ports: {},
+    isSpoof: false
   }; 
   let inbound = deviceRawToDb(d)
   let updated = _.defaultsDeep(inbound, old || {}, defaultDevice);
@@ -145,12 +146,12 @@ module.exports.updateDevice = (d) => {
 
 }
 
-module.exports.getDevices = () => 
+module.exports.getDevices = (searchObj) => 
   new Promise((res, rej) => {
-    db.devices.find({}, (e, ds) => e ? rej(e) : res(ds));
+    db.devices.find(searchObj || {}, (e, ds) => e ? rej(e) : res(ds));
   });
 
-// mutate in latestIp
+// one time mutations
 // db.devices.find({}, (e,ds) => {
 //   ds.forEach(d => {
 //     console.log(d.mac, d.latestIp);
@@ -161,6 +162,9 @@ module.exports.getDevices = () =>
 //     }
 //   })
 // })
+// db.devices.update({}, { $set: { isSpoof: false }}, { multi: true }, (e, n) => 
+//   console.log('isSpoof false set on ' + n + ' devices')
+// );
 
 
 
