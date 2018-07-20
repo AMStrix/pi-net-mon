@@ -242,3 +242,6 @@ module.exports.scanIp = ip => {
 module.exports.onExit = cleanupArpSpoof;
 
 spoofInit();
+
+// todo:
+// avahi-browse -atp --resolve

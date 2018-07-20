@@ -9,11 +9,13 @@
     "express-graphql": "^0.6.12",
     "express-session": "^1.15.6",
     "graphql": "^0.13.2",
+    "lodash": "^4.17.10",
     "nedb": "^1.8.0",
     "nedb-promise": "^2.0.1",
     "nedb-session-store": "^1.1.2",
     "node-nmap": "^4.0.0",
     "shelljs": "^0.8.2",
+    "tail": "^1.2.4",
     "uuid": "^3.3.2"
   },
   "devDependencies": {

@@ -19,7 +19,8 @@ const BRO_DEPS = [
   "nmap", 
   "tcpdump", 
   "texinfo",
-  "dsniff" // arpspoof
+  "dsniff", // arpspoof
+  "avahi-utils", // avahi-browse
 ];
 
 let isInstalling = false;
@@ -126,6 +127,13 @@ const steps = [
     return this.shex(
       'cd bro/bro-2.5.1 && sudo make install',
       'error building bro'
+    );
+  }),
+
+  new InstallStep('Configure bro to output json', function() {
+    return this.shex(
+      'sudo bash -c \'echo "@load tuning/json-logs" >> /opt/nsm/bro/share/bro/site/local.bro\'',
+      'error writing json-logs config to bro/site/local.bro'
     );
   }),
 
