@@ -1,12 +1,14 @@
 import React, { Component } from "react";
 import { Query, Mutation } from 'react-apollo';
 import gql from 'graphql-tag';
+import { Route, Switch, Redirect, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { Button, Icon, Popup } from 'semantic-ui-react';
 import moment from 'moment';
 
 import Grid from './Grid';
 import SlideLabel from './SlideLabel';
+import Device from './Device';
 
 const SPOOF_STATUS = `
     errors
@@ -73,6 +75,38 @@ function fromNow(when) {
   return moment(when).from(new Date());
 }
 
+const Devices = ({ match: { url }}) => (
+  <Query query={DEVICES} pollInterval={5000}>
+    {({ loading, error, data }) => {
+      if (loading) return "Loading...";
+      if (error) return `Error! ${error.message}`;
+      return (
+        <Switch>
+          <Route path={url + '/:mac'} component={Device} />
+          <Route 
+            path={url} 
+            exact={true} 
+            render={() => (
+              <Grid>
+                <SpoofStatus {...data.spoofStatus}/>
+                {data.devices.map(d =>
+                  <DeviceSummary 
+                    key={d.mac} 
+                    {...d} 
+                    activeIp={data.spoofStatus.portScan.host}
+                    isScanning={data.spoofStatus.portScan.processing}
+                  />
+                )}
+              </Grid>
+            )} 
+          />
+        </Switch>
+      );
+    }}
+  </Query>
+);
+
+
 const SpoofStatus = ({pingSweep, portScan}) => (
     <Grid.Head>
       <div>
@@ -92,28 +126,6 @@ const SpoofStatus = ({pingSweep, portScan}) => (
     </Grid.Head>
 );
 
-const Devices = () => (
-  <Query query={DEVICES} pollInterval={5000}>
-    {({ loading, error, data }) => {
-      if (loading) return "Loading...";
-      if (error) return `Error! ${error.message}`;
-
-      return (
-        <Grid>
-          <SpoofStatus {...data.spoofStatus}/>
-          {data.devices.map(d =>
-            <Device 
-              key={d.mac} 
-              {...d} 
-              activeIp={data.spoofStatus.portScan.host}
-              isScanning={data.spoofStatus.portScan.processing}
-            />
-          )}
-        </Grid>
-      );
-    }}
-  </Query>
-);
 
 const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loading) => {
   let ip = p.latestIp.ip;
@@ -140,7 +152,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
             content={p.isSpoof ? 'arp spoofing on' : 'arp spoofing off, not monitoring traffic'}
           />
         }
-        { p.mac }
+        { <Link to={'/devices/' + p.mac} >{p.mac}</Link> }
       </div>
       <div className='_top'>
         { beingScanned ? <SlideLabel
@@ -188,7 +200,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
   );
 } 
 
-class Device extends Component {
+class DeviceSummary extends Component {
   state = { showPorts: false };
   showPorts = () => this.setState({ showPorts: !this.state.showPorts });
   hidePorts = () => this.setState({ showPorts: false });

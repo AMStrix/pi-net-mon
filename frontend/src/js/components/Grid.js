@@ -10,6 +10,7 @@ const Grid = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
+  flex-grow: 1;
 `;
 
 export default Grid;
@@ -23,7 +24,7 @@ Grid.Head = styled.div`
 `;
 Grid.Item = styled.div`
   position: relative;
-  width: ${itemW}px;
+  width: ${p => p.hasOwnProperty('full') ? 100+'%' : itemW+'px'};
   margin: ${gutter}px;
   padding: ${padding * (1/2)}px ${padding}px ${padding * (3/8)}px;
   background: white;
