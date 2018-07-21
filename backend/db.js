@@ -3,45 +3,23 @@ const Nedb = require('nedb');
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
 
-const db = {
-  users: new Nedb({ 
-    filename: './data/users.db', 
-    autoload: true 
-  }),
-  localIps: new Nedb({
-    filename: './data/localIps.db',
+const DBS = ['users', 'localIps', 'devices', 'remoteHosts'];
+const makeDb = name => 
+  new Nedb({
+    filename: `./data/${name}.db`,
     autoload: true
-  }),
-  devices: new Nedb({
-    filename: './data/devices.db',
-    autoload: true
-  }),
-  remoteIps: new Nedb({
-    filename: './data/remoteIps.db',
-    autoload: true
-  }),
-  remoteDomains: new Nedb({
-    filename: './data/remoteDomains.db',
-    autoload: true
-  })
+  });
+const db = DBS.reduce((a, n) => (a[n] = makeDb(n)) && a, {});
+const INDEXES = {
+  users: 'username',
+  devices: 'mac',
+  localIps: 'ip'
 };
-
-
-// indexes
-db.users.ensureIndex({ fieldName: 'username', unique: true }, 
-  e => e && console.log(e));
-
-db.devices.ensureIndex({ fieldName: 'mac', unique: true }, 
-  e => e && console.log(e));
-
-db.localIps.ensureIndex({ fieldName: 'ip', uniuqe: true },
-  e => e && console.log(e));
-
-db.remoteIps.ensureIndex({ fieldName: 'ip', unique: true },
-  e => e && console.log(e));
-
-db.remoteDomains.ensureIndex({ fieldName: 'domain', unique: true },
-  e => e && console.log(e));
+Object.keys(INDEXES).forEach(dbn => 
+  db[dbn].ensureIndex({ fieldName: INDEXES[dbn], unique: true },
+    e => e && console.log(e)
+  )
+);
 
 // data manipulation
 function makeLocalIp(d) {
