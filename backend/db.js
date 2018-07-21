@@ -15,6 +15,14 @@ const db = {
   devices: new Nedb({
     filename: './data/devices.db',
     autoload: true
+  }),
+  remoteIps: new Nedb({
+    filename: './data/remoteIps.db',
+    autoload: true
+  }),
+  remoteDomains: new Nedb({
+    filename: './data/remoteDomains.db',
+    autoload: true
   })
 };
 
@@ -29,6 +37,11 @@ db.devices.ensureIndex({ fieldName: 'mac', unique: true },
 db.localIps.ensureIndex({ fieldName: 'ip', uniuqe: true },
   e => e && console.log(e));
 
+db.remoteIps.ensureIndex({ fieldName: 'ip', unique: true },
+  e => e && console.log(e));
+
+db.remoteDomains.ensureIndex({ fieldName: 'domain', unique: true },
+  e => e && console.log(e));
 
 // data manipulation
 function makeLocalIp(d) {
@@ -134,22 +147,40 @@ module.exports.updateLocalIp = (d) => {
   );
 }
 
-module.exports.updateDevice = (d) => {
+module.exports.updateDevice = d => new Promise((res, rej) => {
+  if (!d.mac) { throw new Error('db.js updateDevice, must have mac! was: ', d); }
   db.devices.findOne({ mac: d.mac }, (e, old) => {
     db.devices.update(
       { mac: d.mac }, 
       makeDevice(d, old), 
       { upsert: true }, 
-      (e, replacementCount, upserted) => {}
+      (e, replacementCount, upserted) => {
+        e ? rej(e) : res()
+      }
     );
   })
+});
 
-}
+module.exports.updateDeviceByIp = d => new Promise((res, rej) => {
+  if (!d.ip) { throw new Error('db.js updateDeviceByIp, must have ip! was: ', d); }
+  db.devices.findOne({ 'latestIp.ip': d.ip }, (e, old) => {
+    d.mac = old.mac;
+    db.devices.update(
+      { mac: old.mac }, 
+      makeDevice(d, old), 
+      { upsert: true }, 
+      (e, replacementCount, upserted) => {
+        e ? rej(e) : res()
+      }
+    );
+  })
+});
 
 module.exports.getDevices = (searchObj) => 
   new Promise((res, rej) => {
     db.devices.find(searchObj || {}, (e, ds) => e ? rej(e) : res(ds));
-  });
+  }
+);
 
 // one time mutations
 // db.devices.find({}, (e,ds) => {
@@ -165,6 +196,32 @@ module.exports.getDevices = (searchObj) =>
 // db.devices.update({}, { $set: { isSpoof: false }}, { multi: true }, (e, n) => 
 //   console.log('isSpoof false set on ' + n + ' devices')
 // );
+
+// db.remoteDomains.update(
+//   { domain: 'test.xxx'}, 
+//   { domain: 'test.xxx', hitsHr: [0,0,0,0,0] }, 
+//   { upsert: true },
+//   (e, reps, up) => {
+//     db.remoteDomains.findOne({domain: 'test.xxx'}, (e, d) => {
+//       console.log('findOne', d);
+//     })
+//   }
+// );
+// db.remoteDomains.findOne({domain: 'test.xxx'}, (e, d) => {
+//   console.log('before', d);
+//   db.remoteDomains.update(
+//     {domain: d.domain}, 
+//     //{ $pop: { hitsHr: -1 }, $push: { hitsHr: 0 }, $inc: { 'hitsHr.4': 1 }}, 
+//     { $inc: { 'hits.2018.7.6.12': 1 }}, // use tree
+//     (e,r,u) => {
+//       console.log('update', e, r, u);
+//       db.remoteDomains.findOne({domain: 'test.xxx'}, (e, d) => {
+//         console.log('after', d);
+//       });
+//     }
+//   )
+// })
+
 
 
 

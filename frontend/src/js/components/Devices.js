@@ -26,24 +26,26 @@ const SPOOF_STATUS = `
     }
 `;
 
+const DEVICE = `
+    mac
+    vendor
+    os
+    isSensor
+    isGateway
+    isSpoof
+    latestIp { ip seen }
+    ips { ip seen }
+    ports {
+      port
+      protocol
+      service
+      seen
+    }
+`;
+
 const DEVICES = gql`
   query devices {
-    devices {
-      mac
-      vendor
-      os
-      isSensor
-      isGateway
-      isSpoof
-      latestIp { ip seen }
-      ips { ip seen }
-      ports {
-        port
-        protocol
-        service
-        seen
-      }
-    }
+    devices {${DEVICE}}
     spoofStatus {${SPOOF_STATUS}}
   }
 `;
@@ -53,6 +55,15 @@ const SCAN = gql`
     scan(ip: $ip) {
       spoofStatus {${SPOOF_STATUS}}
       scanError
+    }
+  }
+`;
+
+const SPOOF_DEVICE = gql`
+  mutation spoofDevice($ip: String!, $isSpoof: Boolean) {
+    spoofDevice(ip: $ip, isSpoof: $isSpoof) {
+      devices {${DEVICE}}
+      spoofError
     }
   }
 `;
@@ -127,7 +138,14 @@ const SpoofStatus = ({pingSweep, portScan}) => (
 );
 
 
-const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loading) => {
+class DeviceSummary extends Component {
+  state = { showPorts: false };
+  showPorts = () => this.setState({ showPorts: !this.state.showPorts });
+  hidePorts = () => this.setState({ showPorts: false });
+  render() {return renderDevice(this);}
+}
+
+const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
   let ip = p.latestIp.ip;
   let beingScanned = p.isScanning && p.activeIp === ip;
   return (
@@ -180,46 +198,80 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}, scan, data, loadi
       <div className='_bottom'>
         <Icon name='clock' />
         { moment(p.latestIp.seen).from(new Date()) }
-        { <Button 
-          className="_scanButton"
-          content='scan now' 
-          size='mini' 
-          loading={loading}
-          disabled={loading || p.isScanning}
-          style={{padding: '4px 6px', float: 'right'}}
-          onClick={() => scan({ variables: {ip}})} 
-        /> }
-        { data && data.scan.scanError && <NoticeOverlay content={
-          <span>
-            <Icon name='warning' />
-            { data.scan.scanError }
-          </span>
-        } />}
+        <ScanControl {...p} />
+        <SpoofControl {...p} />
       </div>
     </Grid.Item>
   );
 } 
 
-class DeviceSummary extends Component {
-  state = { showPorts: false };
-  showPorts = () => this.setState({ showPorts: !this.state.showPorts });
-  hidePorts = () => this.setState({ showPorts: false });
-  render() {return (
-    <Mutation 
-      mutation={SCAN}
-      update={(cache, { data: {scan}}) => {
-        const query = cache.readQuery({ query: DEVICES });
-        query.spoofStatus = scan.spoofStatus;
-        cache.writeQuery({
-          query: DEVICES,
-          data: query
-        });
-      }}
-    >
-      {(scan, {data, loading}) => renderDevice(this, scan, data, loading)}
-    </Mutation>
-  )};
-}
+const ScanControl = ({isScanning, latestIp: { ip }}) => (
+  <Mutation 
+    mutation={SCAN}
+    update={(cache, { data: {scan}}) => {
+      const query = cache.readQuery({ query: DEVICES });
+      query.spoofStatus = scan.spoofStatus;
+      cache.writeQuery({
+        query: DEVICES,
+        data: query
+      });
+    }}
+  > 
+  {(scan, {data, loading}) => (
+    <span>
+      <Button 
+        className="_scanButton"
+        content='scan now' 
+        size='mini' 
+        loading={loading}
+        disabled={loading || isScanning}
+        style={{padding: '4px 6px', float: 'right'}}
+        onClick={() => scan({ variables: {ip}})} 
+      />
+      { data && data.scan.scanError && <NoticeOverlay content={
+        <span>
+          <Icon name='warning' />
+          { data.scan.scanError }
+        </span>
+      } />} 
+    </span> 
+  )}
+  </Mutation>
+);
+
+const SpoofControl = ({isSpoof, latestIp: { ip }}) => (
+  <Mutation 
+    mutation={SPOOF_DEVICE}
+    update={(cache, { data: {spoofDevice}}) => {
+      const query = cache.readQuery({ query: DEVICES });
+      query.devices = spoofDevice.devices;
+      cache.writeQuery({
+        query: DEVICES,
+        data: query
+      });
+    }}
+  > 
+  {(spoofDevice, {data, loading}) => ( 
+    <span>
+      <Button 
+        className="_scanButton"
+        content={isSpoof ? 'stop monitoring' : 'start monitoring'} 
+        size='mini' 
+        loading={loading}
+        disabled={loading}
+        style={{padding: '4px 6px', float: 'right'}}
+        onClick={() => spoofDevice({ variables: { ip: ip, isSpoof: !isSpoof } })} 
+      />
+      { data && data.spoofDevice.spoofError && <NoticeOverlay content={
+        <span>
+          <Icon name='warning' />
+          { data.spoofDevice.spoofError }
+        </span>
+      } />} 
+    </span> 
+  )}
+  </Mutation>
+);
 
 const Overlay = ({onHide, children}) => (
   <Grid.Overlay>

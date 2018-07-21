@@ -200,7 +200,7 @@ function arpSpoof(ip) {
 }
 //arpSpoof('192.168.0.101');
 //arpSpoof('192.168.0.111');
-db.updateDevice({ mac: 'B8:27:EB:CB:37:2E', isSpoof: true });
+//db.updateDevice({ mac: 'B8:27:EB:CB:37:2E', isSpoof: true });
 
 function cleanupArpSpoof() {
   let kills = Object.values(spoofing).map(child =>
@@ -239,9 +239,21 @@ module.exports.scanIp = ip => {
   return portScan(ip);
 }
 
+module.exports.spoofDevice = (ip, isSpoof) => {
+  if (thisGateway() === ip) {
+    return Promise.resolve('cannot spoof gateway ' + ip);
+  }
+  if (thisIp() === ip) {
+    return Promise.resolve('cannot spoof pi-net-mon device' + ip);
+  }
+  return db.updateDeviceByIp({ ip: ip, isSpoof: isSpoof })
+    .then(x => spoofLoop() || null) // null is no-error
+}
+
 module.exports.onExit = cleanupArpSpoof;
 
 spoofInit();
 
 // todo:
-// avahi-browse -atp --resolve
+// avahi-browse -atp --resolve (.local address finding)
+// detect ip changes for a mac, then adjust spoofer &etc.

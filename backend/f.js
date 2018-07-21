@@ -16,3 +16,9 @@ module.exports.memoizePeriodic = (fn, stale) => {
   outFn.clear = () => cache.t = 0;
   return outFn;
 };
+
+module.exports.promiseSerial = funcs =>
+  funcs.reduce((promise, func) =>
+    promise
+      .then(result => func()
+      .then(Array.prototype.concat.bind(result))), Promise.resolve([]));

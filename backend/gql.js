@@ -1,12 +1,12 @@
-let expressGraphql = require('express-graphql');
-let { 
+const expressGraphql = require('express-graphql');
+const { 
     buildSchema
 } = require('graphql');
 
-let install = require('./install');
-let spoof = require('./spoof');
-let bro = require('./bro');
-let db = require('./db');
+const install = require('./install');
+const spoof = require('./spoof');
+const bro = require('./bro');
+const db = require('./db');
 
 spoof.start();
 
@@ -70,6 +70,10 @@ let schema = buildSchema(`
     spoofStatus: SpoofStatus
     scanError: String
   }
+  type SpoofResult {
+    devices: [Device]
+    spoofError: String
+  }
 
 
   type Query {
@@ -85,6 +89,7 @@ let schema = buildSchema(`
     createAdmin(user: String!, pass: String!): String
     login(user: String!, pass: String!): Status
     scan(ip: String!): ScanResult
+    spoofDevice(ip: String!, isSpoof: Boolean): SpoofResult
     deployBro: BroStatus
   }
 
@@ -147,7 +152,15 @@ let root = {
       spoofStatus: spoof.state
     };
   }),
-  deployBro: bro.deploy
+  deployBro: bro.deploy,
+  spoofDevice: ({ip, isSpoof}) => 
+    Promise.resolve([])
+      .then(a => spoof.spoofDevice(ip, isSpoof).then(e => a.concat(e)))
+      .then(a => db.getDevices().then(ds => a.concat([devicesToGql(ds)])))
+      .then(([spoofErr, devices]) => ({
+          spoofError: spoofErr,
+          devices: devices
+      }))
 };
 
 module.exports = expressGraphql({

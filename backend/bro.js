@@ -75,6 +75,7 @@ function watch(eventSource, path) {
   watching[eventSource] = new Tail(path, { follow: true });
   watching[eventSource].on('line', d => handleFilechange(eventSource, d));
   watching[eventSource].on('error', e => {
+    fs.closeSync(fs.openSync(path, 'a'));
     console.log('bro.js watch error: ', e);
     console.log('...try to unwatch, then watch again to remedy.');
     watching[eventSource].unwatch();
