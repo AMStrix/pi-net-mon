@@ -5,6 +5,7 @@ const Tail = require('tail').Tail;
 const readdir = util.promisify(fs.readdir);
 
 const f = require('./f');
+const db = require('./db');
 
 const BROBIN = 'sudo /opt/nsm/bro/bin/broctl';
 
@@ -18,7 +19,7 @@ const state = {
 let deploying = false;
 
 function init() {
-
+  watchLogs();
 }
 
 function addError(e) {
@@ -43,16 +44,29 @@ const cmdDeploy = () => {
   deploying = true;
   let out = sh.exec(BROBIN + ' deploy', { silent: false });
   deploying = false;
-  // todo - state.isDeployed/state.status
   cmdStatus.clear();
-  //console.log('cmdDeploy out', out);
   return true;
 }
 
 const broHandlers = {
   http: d => {
     d = JSON.parse(d);
-    console.log('http| ', d['id.orig_h'], d.method, d.host, d['id.resp_h']);
+    console.log('http| ', d['id.orig_h'], d.method, d.host, d['id.resp_h'], d.uri);
+  },
+  ssl: d => {
+    d = JSON.parse(d);
+    console.log('ssl| ', d['id.orig_h'], d.version, d.server_name, d['id.resp_h']);
+    db.ipToMac(d['id.orig_h']).then(mac => 
+      db.updateRemoteHostHit({
+        host: d.server_name,
+        latestHit: new Date(d.ts*1000),
+        assocHost: d['id.resp_h'],
+        source: 'ssl',
+        protocol: null,
+        service: 'ssl',
+        mac: mac
+      })
+    )
   },
   conn: d => {
 
@@ -77,7 +91,6 @@ function watch(eventSource, path) {
   watching[eventSource].on('error', e => {
     fs.closeSync(fs.openSync(path, 'a'));
     console.log('bro.js watch error: ', e);
-    console.log('...try to unwatch, then watch again to remedy.');
     watching[eventSource].unwatch();
     watching[eventSource].watch();
   });
@@ -85,29 +98,22 @@ function watch(eventSource, path) {
 
 function watchLogs() {
   const logDir = '/opt/nsm/bro/logs/current/';
-  const logs = ['http', 'conn', 'dns', 'files'];
+  const logs = ['http', 'conn', 'dns', 'files', 'ssl'];
   logs.forEach(l => watch(l, logDir + l + '.log'));
 }
-watchLogs();
 
-function updateState() {
-  return new Promise((res, rej) => {
+module.exports.getState = () => 
+  new Promise((res, rej) => {
     state.version = cmdVersion();
     state.status = cmdStatus();
     state.isDeployed = state.status === 'stopped' ? false : true;
     res(state)
-  }).catch(e => addError('updateState error: ' + e) && state);
-}
-module.exports.getState = updateState;
+  })
+  .catch(e => addError('updateState error: ' + e) && state);
 
 module.exports.deploy = () => new Promise((res, rej) => {
   cmdDeploy();
   res(state);
 });
 
-// sudo /opt/nsm/bro/bin/broctl deploy
-// sudo /opt/nsm/bro/bin/broctl start
-// /opt/nsm/bro/logs/current/
-
-///opt/nsm/bro/logs/current
-//communication.log  conn.log  loaded_scripts.log  packet_filter.log  reporter.log  stats.log  stderr.log  stdout.log  weird.log
+init();

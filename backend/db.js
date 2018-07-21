@@ -3,18 +3,25 @@ const Nedb = require('nedb');
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
 
+const f = require('./f');
+
 const DBS = ['users', 'localIps', 'devices', 'remoteHosts'];
+
 const makeDb = name => 
   new Nedb({
     filename: `./data/${name}.db`,
     autoload: true
   });
+
 const db = DBS.reduce((a, n) => (a[n] = makeDb(n)) && a, {});
+
 const INDEXES = {
   users: 'username',
   devices: 'mac',
-  localIps: 'ip'
+  localIps: 'ip',
+  remoteHosts: 'host'
 };
+
 Object.keys(INDEXES).forEach(dbn => 
   db[dbn].ensureIndex({ fieldName: INDEXES[dbn], unique: true },
     e => e && console.log(e)
@@ -154,51 +161,70 @@ module.exports.updateDeviceByIp = d => new Promise((res, rej) => {
   })
 });
 
+module.exports.ipToMac = f.memoizePeriodic(ip => new Promise((res, rej) => 
+  db.devices.findOne({ 'latestIp.ip': ip }, { mac: 1 }, (err, d) => {
+    err && (console.log(`ipToMac(${ip}) error: `, err));
+    d ? res(d.mac) : res();
+  })
+));
+
 module.exports.getDevices = (searchObj) => 
   new Promise((res, rej) => {
     db.devices.find(searchObj || {}, (e, ds) => e ? rej(e) : res(ds));
+  });
+
+
+function makeHostUpdate(raw) {
+  if (!raw.host) { throw new Error('makeHostUpdate(raw) req host, was: ' + h); }
+  const $set = (a, b, n, op, p) => b[n] && (_.set(a, `${op&&op+'.'||''}${n}${p&&'s'||''}`, b[n]));
+  const out = {};
+  //$set(out, raw, 'host', '$set');
+  $set(out, raw, 'latestHit', '$set');
+  $set(out, raw, 'assocHost', '$addToSet', true);
+  $set(out, raw, 'source', '$addToSet', true);
+  $set(out, raw, 'protocol', '$addToSet', true);
+  $set(out, raw, 'service', '$addToSet', true);
+  $set(out, raw, 'mac', '$addToSet', true);
+  if (raw.latestHit) {
+    const ymdh = (d => [
+      d.getUTCFullYear(),
+      d.getUTCMonth(),
+      d.getUTCDate(),
+      d.getUTCHours()
+    ])(raw.latestHit);
+    const path = `hits.y${ymdh[0]}.m${ymdh[1]}.d${ymdh[2]}.h${ymdh[3]}`;
+    //console.log(path);
+    out.$inc = {};
+    out.$inc[path] = 1;
   }
-);
+  //console.log(raw.latestHit);
+  return out;
+}
 
-// one time mutations
-// db.devices.find({}, (e,ds) => {
-//   ds.forEach(d => {
-//     console.log(d.mac, d.latestIp);
-//     //console.log(d.mac, d.ips);
-//     if (!d.latestIp) {
-//       d.latestIp = Object.values(d.ips)[0];
-//       db.devices.update({ mac: d.mac }, d, console.log);
-//     }
-//   })
-// })
-// db.devices.update({}, { $set: { isSpoof: false }}, { multi: true }, (e, n) => 
-//   console.log('isSpoof false set on ' + n + ' devices')
-// );
+module.exports.updateRemoteHostHit = (raw) => {
+  const forDb = makeHostUpdate(raw);
+  //console.log('>>>> makeHostUpdate wet run:\n', JSON.stringify(forDb,null,2), '\n\n');
+  return new Promise((res, rej) => {
+    db.remoteHosts.update(
+      { host: raw.host },
+      forDb,
+      { upsert: true },
+      (e, reps, up) => {
+        e && console.log('updateRemoteHost error', e, JSON.stringify(raw));
+        // reps && console.log('updateRemoteHost reps', reps);
+        // up && console.log('updateRemoteHost up\n', JSON.stringify(up,null,2));
+        res();
+      }
+    )
+  });
+}
+module.exports.getRemoteHosts = () => new Promise((res, rej) => {
+  db.remoteHosts.find({}, { hits: 0 }).sort({ latestHit: -1 }).exec((e, ds) => {
+    e && console.log('getRemoteHosts() error', e);
+    res(ds);
+  })
+});
 
-// db.remoteDomains.update(
-//   { domain: 'test.xxx'}, 
-//   { domain: 'test.xxx', hitsHr: [0,0,0,0,0] }, 
-//   { upsert: true },
-//   (e, reps, up) => {
-//     db.remoteDomains.findOne({domain: 'test.xxx'}, (e, d) => {
-//       console.log('findOne', d);
-//     })
-//   }
-// );
-// db.remoteDomains.findOne({domain: 'test.xxx'}, (e, d) => {
-//   console.log('before', d);
-//   db.remoteDomains.update(
-//     {domain: d.domain}, 
-//     //{ $pop: { hitsHr: -1 }, $push: { hitsHr: 0 }, $inc: { 'hitsHr.4': 1 }}, 
-//     { $inc: { 'hits.2018.7.6.12': 1 }}, // use tree
-//     (e,r,u) => {
-//       console.log('update', e, r, u);
-//       db.remoteDomains.findOne({domain: 'test.xxx'}, (e, d) => {
-//         console.log('after', d);
-//       });
-//     }
-//   )
-// })
 
 
 
