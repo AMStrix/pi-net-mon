@@ -4,16 +4,16 @@ module.exports.memoizePeriodic = (fn, stale) => {
   const defaultStale = 1000 * 60 * 60;
   let cache = {};
   let outFn = (...args) => {
-    if (cache.v && Date.now() - cache.t < (stale || defaultStale)) {
-      return cache.v;
+    let c = cache[args[0]];
+    if (c && Date.now() - c.t < (stale || defaultStale)) {
+      return c.v;
     } else {
-      let res = fn();
-      cache.v = res;
-      cache.t = Date.now();
-      return cache.v;
+      let res = fn(args[0]);
+      cache[args[0]] = { v: res, t: Date.now() };
+      return cache[args[0]].v;
     }
   }
-  outFn.clear = () => cache.t = 0;
+  outFn.clear = (arg) => arg && cache[arg] ? (cache[arg] = null) : (cache = {});
   return outFn;
 };
 
