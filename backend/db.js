@@ -180,6 +180,7 @@ function makeHostUpdate(raw) {
   const out = {};
   //$set(out, raw, 'host', '$set');
   $set(out, raw, 'latestHit', '$set');
+  $set(out, raw, 'latestMac', '$set');
   $set(out, raw, 'assocHost', '$addToSet', true);
   $set(out, raw, 'source', '$addToSet', true);
   $set(out, raw, 'protocol', '$addToSet', true);

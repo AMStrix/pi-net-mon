@@ -1,9 +1,11 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
+import { Link } from 'react-router-dom';
 import { graphql, Query, Mutation } from 'react-apollo';
 import gql from 'graphql-tag';
 import { List, Icon, Loader } from 'semantic-ui-react';
 import moment from 'moment';
+import styled from 'styled-components';
 
 import Grid from './Grid';
 
@@ -12,6 +14,7 @@ const REMOTE_HOSTS = gql`
     remoteHosts {
       host
       latestHit
+      latestMac
       assocHost
       sources
       protocols
@@ -20,6 +23,7 @@ const REMOTE_HOSTS = gql`
     }
   }
 `;
+
 const DEPLOY = gql`
   mutation deploy {
     deployBro {
@@ -27,6 +31,16 @@ const DEPLOY = gql`
       status
       errors
     }
+  }
+`;
+
+const Style = styled.div`
+  ._subtle {
+    white-space: nowrap;
+    color: gray;
+  }
+  ._host {
+    width: 99%;
   }
 `;
 
@@ -38,20 +52,26 @@ const DashboardRemoteHosts = () => (
         if (error) return `Error! ${error.message}`;
 
         return (
-          <div>
+          <Style>
             <div>Remote Hosts</div>
             <hr />
             <div className='_middle'>
+              <table>
+                <tbody>
               { remoteHosts.map(h => (
-                <div key={h.host}>
-                  {h.host} 
-                  <div style={{float:'right'}}>
+                <tr key={h.host}>
+                  <td className='_subtle'>{h.services}</td>
+                  <td className='_host'>{h.host}</td>
+                  <td><Link to={'/devices/'+h.latestMac} >{h.latestMac}</Link></td>
+                  <td className='_subtle'>
                     {moment(h.latestHit).from(new Date())}
-                  </div>
-                </div>
+                  </td>
+                </tr>
               ))}
+                </tbody>
+              </table>
             </div>
-          </div>
+          </Style>
         );
       }}
     </Query>

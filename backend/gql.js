@@ -77,6 +77,7 @@ let schema = buildSchema(`
   type RemoteHost {
     host: String
     latestHit: String
+    latestMac: String
     assocHost: [String]
     sources: [String]
     protocols: [String]

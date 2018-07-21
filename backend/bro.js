@@ -60,6 +60,7 @@ const broHandlers = {
       db.updateRemoteHostHit({
         host: d.server_name,
         latestHit: new Date(d.ts*1000),
+        latestMac: mac,
         assocHost: d['id.resp_h'],
         source: 'ssl',
         protocol: null,
