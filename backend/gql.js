@@ -74,6 +74,15 @@ let schema = buildSchema(`
     devices: [Device]
     spoofError: String
   }
+  type RemoteHost {
+    host: String
+    latestHit: String
+    assocHost: [String]
+    sources: [String]
+    protocols: [String]
+    services: [String]
+    macs: [String]
+  }
 
 
   type Query {
@@ -83,6 +92,7 @@ let schema = buildSchema(`
     status: Status
     devices: [Device]
     spoofStatus: SpoofStatus
+    remoteHosts: [RemoteHost]
   }
 
   type Mutation {
@@ -139,13 +149,16 @@ function checkAuth(session) {
 
 let root = {
   installStatus: install.getState,
-  createAdmin: ({user, pass}) => install.createAdmin(user, pass),
-  installBro: install.install,
   devices: () => db.getDevices().then(devicesToGql),
   broStatus: bro.getState,
   status: status,
-  login: login,
   spoofStatus: () => spoof.state,
+  remoteHosts: () => db.getRemoteHosts().then(hs =>
+    hs.map(h => dateToIsoString(h, 'latestHit'))),
+  
+  createAdmin: ({user, pass}) => install.createAdmin(user, pass),
+  installBro: install.install,
+  login: login,
   scan: ({ip}) => spoof.scanIp(ip).then((e) => {
     return {
       scanError: e,
