@@ -171,7 +171,6 @@ function spoofable(ip) {
 
 function spoofLoop() {
   db.getDevices({ isSpoof: true }).then(ds => {
-    //ds.forEach(d => console.log('isSpoof', d.mac));
     ds.forEach(d => arpSpoof(d.latestIp.ip));
   });
   db.getDevices({ isSpoof: false }).then(ds => {
@@ -191,16 +190,11 @@ function arpSpoof(ip) {
   let args = ['-i', 'eth0', '-t', ip, '-r', thisGateway()];
   let child = childProcess.spawn('arpspoof', args);
   spoofing[ip] = child;
-  //child.stdout.on('data', d => console.log('DATA', d.toString()));
-  //child.stderr.on('data', e => console.log('ERROR', e.toString()));
   child.on('close', x => {
     console.log('CLOSE arpspoof', ip, 'code: ', x);
     spoofing[ip] = null; // clear the child after close
   });
 }
-//arpSpoof('192.168.0.101');
-//arpSpoof('192.168.0.111');
-//db.updateDevice({ mac: 'B8:27:EB:CB:37:2E', isSpoof: true });
 
 function cleanupArpSpoof() {
   let kills = Object.values(spoofing).map(child =>
