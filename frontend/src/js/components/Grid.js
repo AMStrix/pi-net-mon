@@ -22,9 +22,18 @@ Grid.Head = styled.div`
   margin: ${gutter}px;
   padding: ${padding}px;
 `;
+const gw = p => {
+  if (p.hasOwnProperty('full')) {
+    return '100%';
+  } else if (p.gridWidths) {
+    return p.gridWidths * itemW + 'px';
+  } else {
+    return itemW + 'px';
+  }
+};
 Grid.Item = styled.div`
   position: relative;
-  width: ${p => p.hasOwnProperty('full') ? 100+'%' : itemW+'px'};
+  width: ${gw};
   margin: ${gutter}px;
   padding: ${padding * (1/2)}px ${padding}px ${padding * (3/8)}px;
   background: white;
