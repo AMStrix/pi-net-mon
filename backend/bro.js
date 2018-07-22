@@ -52,6 +52,18 @@ const broHandlers = {
   http: d => {
     d = JSON.parse(d);
     console.log('http| ', d['id.orig_h'], d.method, d.host, d['id.resp_h'], d.uri);
+    db.ipToMac(d['id.orig_h']).then(mac => 
+      db.updateRemoteHostHit({
+        host: d.host,
+        latestHit: new Date(d.ts*1000),
+        latestMac: mac,
+        assocHost: d['id.resp_h'],
+        source: 'http',
+        protocol: null,
+        service: 'http',
+        mac: mac
+      })
+    )
   },
   ssl: d => {
     d = JSON.parse(d);
@@ -75,6 +87,21 @@ const broHandlers = {
   dns: d => {
     d = JSON.parse(d);
     console.log('dns| ', d['id.orig_h'], d.query)
+    if (d['id.resp_p'] != 53) return; // ignore avahi/bonjour & 137 &etc. for now
+    if (!d.query) return; // ignore if no query (host)
+    db.ipToMac(d['id.orig_h']).then(mac => 
+      mac && // only if we have a mac (for ipv6 addys)
+      db.updateRemoteHostHit({
+        host: d.query,
+        latestHit: new Date(d.ts*1000),
+        latestMac: mac,
+        //assocHost: d['id.resp_h'], //gateway, consider "answers array"
+        source: 'dns',
+        protocol: d.proto,
+        service: 'dns',
+        mac: mac
+      })
+    )
   }
 }
 
