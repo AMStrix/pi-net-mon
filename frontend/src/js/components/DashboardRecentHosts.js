@@ -35,17 +35,30 @@ const DEPLOY = gql`
 `;
 
 const Style = styled.div`
-  ._subtle {
+  ._hostWrap {
     white-space: nowrap;
+    margin-bottom: 4px;
+    line-height: 1.1rem;
+  }
+  ._subtle {
     color: gray;
   }
   ._host {
-    width: 99%;
+    font-weight: bold;
+  }
+  ._when {
+    color: gray;
+    float: right;
+  }
+  ._scroll {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-right: -8px; // todo: make Grid.Scrollable or sth.
   }
 `;
 
 const DashboardRemoteHosts = () => (
-  <Grid.Item gridWidths={2}>
+  <Grid.Item>
     <Query 
       query={REMOTE_HOSTS} 
       variables={{ sortField: 'latestHit', sortDir: -1, skip: 0, limit: 20 }} 
@@ -57,23 +70,23 @@ const DashboardRemoteHosts = () => (
 
         return (
           <Style>
-            <div>Hosts</div>
+            <div>Recent Hosts</div>
             <hr />
-            <div className='_middle'>
-              <table>
-                <tbody>
+            <div className='_middle _scroll'>
               { remoteHosts.map(h => (
-                <tr key={h.host}>
-                  <td className='_subtle'>{h.services}</td>
-                  <td className='_host'>{h.host}</td>
-                  <td><Link to={'/devices/'+h.latestMac} >{h.latestMac}</Link></td>
-                  <td className='_subtle'>
-                    {moment(h.latestHit).from(new Date())}
-                  </td>
-                </tr>
+                <div className='_hostWrap' key={h.host}>
+                  <div className='_host'>
+                    {h.host}
+                  </div>
+                  <div>
+                    <Link to={'/devices/'+h.latestMac} >{h.latestMac}</Link>
+                    <span className='_subtle'>{' ' + h.services}</span>
+                    <div className='_when'>
+                      {moment(h.latestHit).from(new Date())}
+                    </div>
+                  </div>
+                </div>
               ))}
-                </tbody>
-              </table>
             </div>
           </Style>
         );

@@ -4,12 +4,14 @@ import gql from 'graphql-tag';
 
 import Grid from './Grid';
 import DashboardBro from './DashboardBro';
-import DashboardRemoteHosts from './DashboardRemoteHosts';
+import DashboardRemoteHosts from './DashboardRecentHosts';
+import DashboardActiveHosts from './DashboardActiveHosts';
 
 const Dashboard = () => (
   <Grid>
     <DashboardBro />
     <DashboardRemoteHosts />
+    <DashboardActiveHosts />
   </Grid>
 );
 

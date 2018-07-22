@@ -181,7 +181,6 @@ function makeHostUpdate(raw) {
   if (!raw.host) { throw new Error('makeHostUpdate(raw) req host, was: ' + h); }
   const $set = (a, b, n, op, p) => b[n] && (_.set(a, `${op&&op+'.'||''}${n}${p&&'s'||''}`, b[n]));
   const out = {};
-  //$set(out, raw, 'host', '$set');
   $set(out, raw, 'latestHit', '$set');
   $set(out, raw, 'latestMac', '$set');
   $set(out, raw, 'assocHost', '$addToSet', true);
@@ -234,6 +233,23 @@ module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise
       res(ds);
     })
 });
+
+module.exports.getActiveHosts = (y, m, d, h) => new Promise((res, rej) => {
+  //console.log('>>>> getActiveHosts', y, m, d, h);
+  const bp = (s, p, v) => v ? (s + '.' + p + v) : s;
+  const path = _.zip(['y', 'm', 'd', 'h'], [y, m, d, h])
+    .reduce((a, x) => bp(a, x[0], x[1]), 'hits');
+  const find = {}; find[path] = { $gt: 0 };
+  const proj = { host: 1 }; proj[path] = 1; 
+  db.remoteHosts.find(find, proj, (e,ds) =>{
+    e && console.log(e);
+    //console.log('ds', ds);
+    //ds.forEach(x => console.log(x.host, x.hits.y2018.m6.d22.h17));
+    res(ds);
+  })
+});
+
+//module.exports.getActiveHosts(2018, 6, 22, 17);
 
 
 

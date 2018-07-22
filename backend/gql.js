@@ -83,6 +83,7 @@ let schema = buildSchema(`
     protocols: [String]
     services: [String]
     macs: [String]
+    hits: String
   }
 
 
@@ -94,6 +95,7 @@ let schema = buildSchema(`
     devices: [Device]
     spoofStatus: SpoofStatus
     remoteHosts(sortField: String, sortDir: Int, skip: Int, limit: Int): [RemoteHost]
+    activeHosts(period: String): [RemoteHost]
   }
 
   type Mutation {
@@ -148,6 +150,13 @@ function checkAuth(session) {
   console.log('check auth', session);
 }
 
+const ymdh = d => [
+  d.getUTCFullYear(),
+  d.getUTCMonth(),
+  d.getUTCDate(),
+  d.getUTCHours()
+];
+
 let root = {
   installStatus: install.getState,
   devices: () => db.getDevices().then(devicesToGql),
@@ -157,7 +166,18 @@ let root = {
   remoteHosts: ({sortField, sortDir, skip, limit}) => 
     db.getRemoteHosts(sortField, sortDir, skip, limit)
     .then(hs => hs.map(h => dateToIsoString(h, 'latestHit'))),
-  
+  activeHosts: ({period}) => {
+    if (period === '1h') {
+      return db.getActiveHosts.apply(null, ymdh(new Date()))
+        .then(ahs => ahs.map(ah => (ah.hits=JSON.stringify(ah.hits))&&ah));
+    }
+    return null;
+  },
+//       d.getUTCFullYear(),
+      // d.getUTCMonth(),
+      // d.getUTCDate(),
+      // d.getUTCHours()
+//getActiveHosts(2018, 6, 22, 17);
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),
   installBro: install.install,
   login: login,
@@ -177,7 +197,6 @@ let root = {
           devices: devices
       }))
 };
-
 module.exports = expressGraphql({
   schema: schema,
   rootValue: root,
