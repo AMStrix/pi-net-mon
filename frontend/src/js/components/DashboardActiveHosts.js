@@ -61,9 +61,12 @@ const DashboardActiveHosts = () => (
             <hr />
             <div className='_middle _scroll'>
               { !activeHosts && 'no active hosts' }
-              { activeHosts && activeHosts.map(h => (
+              { activeHosts && activeHosts
+                .map(h => [sumLeaves(JSON.parse(h.hits)), h])
+                .sort((a, b) => b[0] - a[0])
+                .map(([hitCount, h]) => (
                 <div className='_hostWrap' key={h.host}>
-                  {h.host} { sumLeaves(JSON.parse(h.hits)) }
+                  {h.host} {hitCount}
                 </div>
               ))}
             </div>

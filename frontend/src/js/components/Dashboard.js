@@ -9,9 +9,9 @@ import DashboardActiveHosts from './DashboardActiveHosts';
 
 const Dashboard = () => (
   <Grid>
-    <DashboardBro />
     <DashboardRemoteHosts />
     <DashboardActiveHosts />
+    <DashboardBro />
   </Grid>
 );
 
