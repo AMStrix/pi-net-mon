@@ -190,10 +190,15 @@ function arpSpoof(ip) {
   let args = ['-i', 'eth0', '-t', ip, '-r', thisGateway()];
   let child = childProcess.spawn('arpspoof', args);
   spoofing[ip] = child;
+  //child.stdout.on('data', d => console.log('arpspoof.std >>>\n', d.toString()));
+  //child.stderr.on('data', e => console.log('arpspoof.err >>>\n', e.toString()));
   child.on('close', x => {
     console.log('CLOSE arpspoof', ip, 'code: ', x);
     spoofing[ip] = null; // clear the child after close
   });
+  child.on('error', e => {
+    console.log('ERROR arpspoof', ip, e);
+  })
 }
 
 function cleanupArpSpoof() {

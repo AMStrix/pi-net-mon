@@ -10,8 +10,8 @@ import styled from 'styled-components';
 import Grid from './Grid';
 
 const REMOTE_HOSTS = gql`
-  query remoteHosts {
-    remoteHosts {
+  query remoteHosts($sortField: String, $sortDir: Int, $skip: Int, $limit: Int) {
+    remoteHosts(sortField: $sortField, sortDir: $sortDir, skip: $skip, limit: $limit) {
       host
       latestHit
       latestMac
@@ -46,14 +46,18 @@ const Style = styled.div`
 
 const DashboardRemoteHosts = () => (
   <Grid.Item gridWidths={2}>
-    <Query query={REMOTE_HOSTS} pollInterval={30000}>
+    <Query 
+      query={REMOTE_HOSTS} 
+      variables={{ sortField: 'latestHit', sortDir: -1, skip: 0, limit: 20 }} 
+      pollInterval={30000}
+    >
       {({ loading, error, data: {remoteHosts} }) => {
         if (loading) return "Loading...";
         if (error) return `Error! ${error.message}`;
 
         return (
           <Style>
-            <div>Remote Hosts</div>
+            <div>Hosts</div>
             <hr />
             <div className='_middle'>
               <table>

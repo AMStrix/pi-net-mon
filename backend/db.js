@@ -28,6 +28,9 @@ Object.keys(INDEXES).forEach(dbn =>
   )
 );
 
+db.remoteHosts.ensureIndex({ fieldName: 'latestHit' }, 
+    e => e && console.log(e));
+
 // data manipulation
 function makeLocalIp(d) {
   let ip = { 
@@ -219,11 +222,17 @@ module.exports.updateRemoteHostHit = (raw) => {
     )
   });
 }
-module.exports.getRemoteHosts = () => new Promise((res, rej) => {
-  db.remoteHosts.find({}, { hits: 0 }).sort({ latestHit: -1 }).exec((e, ds) => {
-    e && console.log('getRemoteHosts() error', e);
-    res(ds);
-  })
+module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise((res, rej) => {
+  let sort = {};
+  sortField && (sort[sortField] = sortDir) || (sort.latestHit = -1);
+  db.remoteHosts.find({}, { hits: 0 })
+    .sort(sort)
+    .skip(skip||0)
+    .limit(limit||30)
+    .exec((e, ds) => {
+      e && console.log('getRemoteHosts() error', e);
+      res(ds);
+    })
 });
 
 

@@ -93,7 +93,7 @@ let schema = buildSchema(`
     status: Status
     devices: [Device]
     spoofStatus: SpoofStatus
-    remoteHosts: [RemoteHost]
+    remoteHosts(sortField: String, sortDir: Int, skip: Int, limit: Int): [RemoteHost]
   }
 
   type Mutation {
@@ -154,8 +154,9 @@ let root = {
   broStatus: bro.getState,
   status: status,
   spoofStatus: () => spoof.state,
-  remoteHosts: () => db.getRemoteHosts().then(hs =>
-    hs.map(h => dateToIsoString(h, 'latestHit'))),
+  remoteHosts: ({sortField, sortDir, skip, limit}) => 
+    db.getRemoteHosts(sortField, sortDir, skip, limit)
+    .then(hs => hs.map(h => dateToIsoString(h, 'latestHit'))),
   
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),
   installBro: install.install,
