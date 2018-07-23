@@ -1,9 +1,12 @@
 const expressGraphql = require('express-graphql');
 const { 
-    buildSchema
+    buildSchema,
+    GraphQLScalarType
 } = require('graphql');
+const { Kind } = require('graphql/language');
 const _ = require('lodash');
 
+const { ymdh } = require('./f');
 const install = require('./install');
 const spoof = require('./spoof');
 const bro = require('./bro');
@@ -11,7 +14,24 @@ const db = require('./db');
 
 spoof.start();
 
+// const dateTime = new GraphQLScalarType({
+//   name: 'Date',
+//   description: 'Date scalar',
+//   serialize(value) {
+//     return value.toISOString();
+//   },
+//   parseValue(value) {
+//     return new Date(value);
+//   },
+//   parseLiteral(ast) {
+//     throw 'test parseLiteral';
+//     return new Date(ast.value);
+//   }
+// });
+
 let schema = buildSchema(`
+  scalar Date
+
   type InstallStatus {
     hasAdmin: Boolean
     hasBro: Boolean
@@ -26,13 +46,13 @@ let schema = buildSchema(`
   }
   type Ip {
     ip: String!
-    seen: String
+    seen: Date
   }
   type Port {
     port: Int
     protocol: String
     service: String
-    seen: String
+    seen: Date
   }
   type Device {
     mac: String!
@@ -77,7 +97,7 @@ let schema = buildSchema(`
   }
   type RemoteHost {
     host: String
-    latestHit: String
+    latestHit: Date
     latestMac: String
     assocHost: [String]
     sources: [String]
@@ -117,13 +137,8 @@ function dateToIsoString(obj, field) {
 }
 
 function devicesToGql(devices) {
-  devices.forEach(d => d.ips && 
-    (d.ips = Object.values(d.ips).map(x => dateToIsoString(x, 'seen'))));
-  devices.forEach(d => d.ports && 
-    (d.ports = Object.values(d.ports).map(x => dateToIsoString(x, 'seen'))));
-  devices.forEach(d => d.lastPortscanTime && 
-    (d.lastPortscanTime = d.lastPortscanTime.toISOString()));
-  devices.forEach(d => d.latestIp = dateToIsoString(d.latestIp, 'seen'));
+  devices.forEach(d => d.ips && (d.ips = Object.values(d.ips)));
+  devices.forEach(d => d.ports && (d.ports = Object.values(d.ports)));
   return devices;
 };
 
@@ -151,13 +166,6 @@ function checkAuth(session) {
   console.log('check auth', session);
 }
 
-const ymdh = d => [
-  d.getUTCFullYear(),
-  d.getUTCMonth(),
-  d.getUTCDate(),
-  d.getUTCHours()
-];
-
 const histPaths = {
   '1h': ymdh,
   '1d': d => _.dropRight(ymdh(d))
@@ -171,7 +179,7 @@ let root = {
   spoofStatus: () => spoof.state,
   remoteHosts: ({sortField, sortDir, skip, limit}) => 
     db.getRemoteHosts(sortField, sortDir, skip, limit)
-    .then(hs => hs.map(h => dateToIsoString(h, 'latestHit'))),
+    .then(hs => hs.map(h => h)),
   activeHosts: ({period}) => {
     let args = histPaths[period](new Date());
     return db.getActiveHosts.apply(null, args)
@@ -195,7 +203,9 @@ let root = {
       .then(([spoofErr, devices]) => ({
           spoofError: spoofErr,
           devices: devices
-      }))
+      })),
+
+  Date: () => console.log('Hello world')
 };
 module.exports = expressGraphql({
   schema: schema,

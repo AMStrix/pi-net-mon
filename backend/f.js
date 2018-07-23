@@ -22,3 +22,10 @@ module.exports.promiseSerial = funcs =>
     promise
       .then(result => func()
       .then(Array.prototype.concat.bind(result))), Promise.resolve([]));
+
+module.exports.ymdh = date => [
+  date.getUTCFullYear(),
+  date.getUTCMonth(),
+  date.getUTCDate(),
+  date.getUTCHours()
+];

@@ -189,12 +189,7 @@ function makeHostUpdate(raw) {
   $set(out, raw, 'service', '$addToSet', true);
   $set(out, raw, 'mac', '$addToSet', true);
   if (raw.latestHit) {
-    const ymdh = (d => [
-      d.getUTCFullYear(),
-      d.getUTCMonth(),
-      d.getUTCDate(),
-      d.getUTCHours()
-    ])(raw.latestHit);
+    const ymdh = f.ymdh(raw.latestHit);
     const path = `hits.y${ymdh[0]}.m${ymdh[1]}.d${ymdh[2]}.h${ymdh[3]}`;
     out.$inc = {};
     out.$inc[path] = 1;
