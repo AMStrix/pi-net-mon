@@ -64,7 +64,7 @@ const DashboardActiveHosts = () => (
   <Grid.Item>
     <Query 
       query={ACTIVE_HOSTS} 
-      variables={{ period: '1h'}} 
+      variables={{ period: '1d'}} 
       pollInterval={30000}
     >
       {({ loading, error, data: {activeHosts} }) => {

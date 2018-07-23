@@ -2,6 +2,7 @@ const expressGraphql = require('express-graphql');
 const { 
     buildSchema
 } = require('graphql');
+const _ = require('lodash');
 
 const install = require('./install');
 const spoof = require('./spoof');
@@ -157,6 +158,11 @@ const ymdh = d => [
   d.getUTCHours()
 ];
 
+const histPaths = {
+  '1h': ymdh,
+  '1d': d => _.dropRight(ymdh(d))
+};
+
 let root = {
   installStatus: install.getState,
   devices: () => db.getDevices().then(devicesToGql),
@@ -167,17 +173,11 @@ let root = {
     db.getRemoteHosts(sortField, sortDir, skip, limit)
     .then(hs => hs.map(h => dateToIsoString(h, 'latestHit'))),
   activeHosts: ({period}) => {
-    if (period === '1h') {
-      return db.getActiveHosts.apply(null, ymdh(new Date()))
-        .then(ahs => ahs.map(ah => (ah.hits=JSON.stringify(ah.hits))&&ah));
-    }
-    return null;
+    let args = histPaths[period](new Date());
+    return db.getActiveHosts.apply(null, args)
+      .then(ahs => ahs.map(ah => (ah.hits=JSON.stringify(ah.hits))&&ah));
   },
-//       d.getUTCFullYear(),
-      // d.getUTCMonth(),
-      // d.getUTCDate(),
-      // d.getUTCHours()
-//getActiveHosts(2018, 6, 22, 17);
+
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),
   installBro: install.install,
   login: login,

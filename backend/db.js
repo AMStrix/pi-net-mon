@@ -231,12 +231,13 @@ module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise
 });
 
 module.exports.getActiveHosts = (y, m, d, h) => new Promise((res, rej) => {
-  //console.log('>>>> getActiveHosts', y, m, d, h);
   const bp = (s, p, v) => _.isNumber(v) ? (s + '.' + p + v) : s;
   const path = _.zip(['y', 'm', 'd', 'h'], [y, m, d, h])
     .reduce((a, x) => bp(a, x[0], x[1]), 'hits');
-  const find = {}; find[path] = { $gt: 0 };
-  const proj = { host: 1 }; proj[path] = 1; 
+  const find = {}; 
+  find[path] = _.isNumber(h) && { $gt: 0 } || { $exists: true };
+  const proj = { host: 1 }; 
+  proj[path] = 1;
   db.remoteHosts.find(find, proj, (e,ds) =>{
     e && console.log(e);
     //ds.forEach(x => console.log(x.host, x.hits.y2018.m6));
