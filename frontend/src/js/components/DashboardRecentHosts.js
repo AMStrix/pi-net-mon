@@ -40,11 +40,11 @@ const Style = styled.div`
     margin-bottom: 4px;
     line-height: 1.1rem;
   }
-  ._subtle {
-    color: gray;
-  }
   ._host {
     font-weight: bold;
+  }
+  & a, & ._when {
+    font-size: 0.9em;
   }
   ._when {
     color: gray;
@@ -80,7 +80,6 @@ const DashboardRemoteHosts = () => (
                   </div>
                   <div>
                     <Link to={'/devices/'+h.latestMac} >{h.latestMac}</Link>
-                    <span className='_subtle'>{' ' + h.services}</span>
                     <div className='_when'>
                       {moment(h.latestHit).from(new Date())}
                     </div>
