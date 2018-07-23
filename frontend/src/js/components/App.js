@@ -10,6 +10,7 @@ import Menu from './Menu';
 import Install from './Install';
 import Dashboard from './Dashboard';
 import Devices from './Devices';
+import Hosts from './Hosts';
 import Login from './Login';
 
 const Wrapper = styled.div`
@@ -65,6 +66,7 @@ class App extends Component {
             {!authed && <Redirect to='/login' /> }
             <Route exact path='/' component={Dashboard} />
             <Route path='/devices' component={Devices} />
+            <Route path='/hosts' component={Hosts} />
           </Switch>
         </ContentWrapper>
       </Wrapper>
