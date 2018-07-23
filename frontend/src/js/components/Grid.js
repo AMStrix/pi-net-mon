@@ -25,8 +25,8 @@ Grid.Head = styled.div`
 const gw = p => {
   if (p.hasOwnProperty('full')) {
     return '100%';
-  } else if (p.gridWidths) {
-    return p.gridWidths * itemW + 'px';
+  } else if (p.gridWidth) {
+    return p.gridWidth * itemW + 'px';
   } else {
     return itemW + 'px';
   }
