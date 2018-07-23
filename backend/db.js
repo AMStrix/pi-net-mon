@@ -178,7 +178,7 @@ module.exports.getDevices = (searchObj) =>
 
 
 function makeHostUpdate(raw) {
-  if (!raw.host) { throw new Error('makeHostUpdate(raw) req host, was: ' + h); }
+  if (!raw.host) { throw new Error('makeHostUpdate(raw) req host, was: ' + raw); }
   const $set = (a, b, n, op, p) => b[n] && (_.set(a, `${op&&op+'.'||''}${n}${p&&'s'||''}`, b[n]));
   const out = {};
   $set(out, raw, 'latestHit', '$set');
@@ -225,14 +225,19 @@ module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise
     })
 });
 
-module.exports.getActiveHosts = (y, m, d, h) => new Promise((res, rej) => {
+module.exports.getActiveHosts = (from, to) => new Promise((res, rej) => {
   const bp = (s, p, v) => _.isNumber(v) ? (s + '.' + p + v) : s;
-  const path = _.zip(['y', 'm', 'd', 'h'], [y, m, d, h])
+  const makePath = (y, m, d, h) => _.zip(['y', 'm', 'd', 'h'], [y, m, d, h])
     .reduce((a, x) => bp(a, x[0], x[1]), 'hits');
+  const pathFrom = makePath.apply(null, from);
+  const pathTo = makePath.apply(null, to);
   const find = {}; 
-  find[path] = _.isNumber(h) && { $gt: 0 } || { $exists: true };
+  const op = _.isNumber(from[3]) && { $gt: 0 } || { $exists: true };
+  find[pathFrom] = op;
+  find[pathTo] = op;
   const proj = { host: 1 }; 
-  proj[path] = 1;
+  proj[pathFrom] = 1;
+  proj[pathTo] = 1;
   db.remoteHosts.find(find, proj, (e,ds) =>{
     e && console.log(e);
     //ds.forEach(x => console.log(x.host, x.hits.y2018.m6));

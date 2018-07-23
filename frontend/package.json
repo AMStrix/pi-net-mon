@@ -7,6 +7,7 @@
     "apollo-client-preset": "^1.0.8",
     "graphql": "^0.13.2",
     "graphql-tag": "^2.9.2",
+    "lodash": "^4.17.10",
     "moment": "^2.22.2",
     "react-apollo": "^2.1.5",
     "react-measure": "^2.0.2",

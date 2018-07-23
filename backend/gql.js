@@ -167,8 +167,8 @@ function checkAuth(session) {
 }
 
 const histPaths = {
-  '1h': ymdh,
-  '1d': d => _.dropRight(ymdh(d))
+  '1h': d => [ymdh(new Date(+d - 1000*60*60)), ymdh(d)],
+  '1d': d => [_.dropRight(ymdh(new Date(+d - 1000*60*60*24))), _.dropRight(ymdh(d))]
 };
 
 let root = {
