@@ -196,11 +196,9 @@ function makeHostUpdate(raw) {
       d.getUTCHours()
     ])(raw.latestHit);
     const path = `hits.y${ymdh[0]}.m${ymdh[1]}.d${ymdh[2]}.h${ymdh[3]}`;
-    //console.log(path);
     out.$inc = {};
     out.$inc[path] = 1;
   }
-  //console.log(raw.latestHit);
   return out;
 }
 
@@ -214,8 +212,6 @@ module.exports.updateRemoteHostHit = (raw) => {
       { upsert: true },
       (e, reps, up) => {
         e && console.log('updateRemoteHost error', e, JSON.stringify(raw));
-        // reps && console.log('updateRemoteHost reps', reps);
-        // up && console.log('updateRemoteHost up\n', JSON.stringify(up,null,2));
         res();
       }
     )
@@ -236,20 +232,19 @@ module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise
 
 module.exports.getActiveHosts = (y, m, d, h) => new Promise((res, rej) => {
   //console.log('>>>> getActiveHosts', y, m, d, h);
-  const bp = (s, p, v) => v ? (s + '.' + p + v) : s;
+  const bp = (s, p, v) => _.isNumber(v) ? (s + '.' + p + v) : s;
   const path = _.zip(['y', 'm', 'd', 'h'], [y, m, d, h])
     .reduce((a, x) => bp(a, x[0], x[1]), 'hits');
   const find = {}; find[path] = { $gt: 0 };
   const proj = { host: 1 }; proj[path] = 1; 
   db.remoteHosts.find(find, proj, (e,ds) =>{
     e && console.log(e);
-    //console.log('ds', ds);
-    //ds.forEach(x => console.log(x.host, x.hits.y2018.m6.d22.h17));
+    //ds.forEach(x => console.log(x.host, x.hits.y2018.m6));
     res(ds);
   })
 });
 
-//module.exports.getActiveHosts(2018, 6, 22, 17);
+
 
 
 
