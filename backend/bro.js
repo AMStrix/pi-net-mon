@@ -71,10 +71,10 @@ const broHandlers = {
     console.log('ssl| ', d['id.orig_h'], d.version, d.server_name, d['id.resp_h']);
     db.ipToMac(d['id.orig_h']).then(mac => 
       db.updateRemoteHostHit({
-        host: d.server_name,
+        host: d.server_name || d['id.resp_h'],
         latestHit: new Date(d.ts*1000),
         latestMac: mac,
-        assocHost: d['id.resp_h'],
+        assocHost: d.server_name ? d['id.resp_h'] : null,
         source: 'ssl',
         protocol: null,
         service: 'ssl',
