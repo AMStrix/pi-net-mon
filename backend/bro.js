@@ -48,6 +48,7 @@ const cmdDeploy = () => {
   return true;
 }
 
+let lastDnsUid = null;
 const broHandlers = {
   http: d => {
     d = JSON.parse(d);
@@ -86,7 +87,9 @@ const broHandlers = {
   },
   dns: d => {
     d = JSON.parse(d);
-    console.log('dns| ', d['id.orig_h'], d.query)
+    if (d.uid === lastDnsUid) { return; } // 2 ident. dns entries coming on the log
+    lastDnsUid = d.uid;
+    console.log('dns| ', d['id.orig_h'], d.query, d.uid);
     if (d['id.resp_p'] != 53) return; // ignore avahi/bonjour & 137 &etc. for now
     if (!d.query) return; // ignore if no query (host)
     db.ipToMac(d['id.orig_h']).then(mac => 
