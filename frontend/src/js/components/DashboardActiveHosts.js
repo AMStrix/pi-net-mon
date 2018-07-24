@@ -8,6 +8,7 @@ import { List, Icon, Loader } from 'semantic-ui-react';
 import moment from 'moment';
 import styled from 'styled-components';
 
+import { processActiveHostHitSums } from './util';
 import Grid from './Grid';
 
 const ACTIVE_HOSTS = gql`
@@ -54,24 +55,7 @@ const Style = styled.div`
   }
 `;
 
-function sumLeavesDay(tree) {
-  const start = new Date();
-  const mkey = d => 'd' + d.getUTCDate() + 'h' + d.getUTCHours();
-  const keys = _.range(24).map(h => {
-      let k = mkey(start);
-      start.setHours(start.getHours() -1);
-      return k;
-    }).reduce((a, k) => (a[k] = true) && a, {});
-  const filter = (v, p, gp) => keys[gp + p] ? v : 0;
-  return sumLeaves(tree, null, null, filter);
-}
 
-const sumLeaves = (x, p, gp, filter) => {
-  if (_.isObject(x)) {
-    return Object.keys(x).reduce((a, k) => a + sumLeaves(x[k], k, p, filter), 0);
-  }
-  return filter(x, p, gp);
-}
 
 const DashboardActiveHosts = () => (
   <Grid.Item>
@@ -83,24 +67,19 @@ const DashboardActiveHosts = () => (
       {({ loading, error, data: {activeHosts} }) => {
         if (loading) return "Loading...";
         if (error) return `Error! ${error.message}`;
-        const hosts = activeHosts && activeHosts
-                .map(h => [sumLeavesDay(JSON.parse(h.hits)), h])
-                .sort((a, b) => b[0] - a[0]) || [];
-        const count = hosts.length;
-        const max = hosts.length && hosts[0][0]; 
-        const gw = hc => ((hc / max) * 100) + '%';
+        const hosts = processActiveHostHitSums(activeHosts);
+        const gw = hc => ((hc / hosts.max) * 100) + '%';
         return (
           <Style>
-            <div>Active Hosts Today ({count})</div>
+            <div>Active Hosts Today ({hosts.count})</div>
             <hr />
             <div className='_middle _scroll'>
-              { !hosts.length && 'no active hosts' }
-              { hosts
-                .map(([hitCount, h]) => (
-                  <div className='_hostWrap' key={h.host}>
-                    <div style={{ width: gw(hitCount) }}>&nbsp;</div>
-                    <span>{h.host} ({hitCount})</span>
-                  </div>
+              { !hosts.hosts.length && 'no active hosts' }
+              { hosts.hosts.map(h => (
+                <div className='_hostWrap' key={h.host}>
+                  <div style={{ width: gw(h.hitCount) }}>&nbsp;</div>
+                  <span>{h.host} ({h.hitCount})</span>
+                </div>
               ))}
             </div>
           </Style>

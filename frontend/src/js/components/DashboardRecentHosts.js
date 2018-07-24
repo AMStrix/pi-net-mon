@@ -48,7 +48,7 @@ const Style = styled.div`
   }
   ._when {
     color: gray;
-    float: right;
+    padding-left: 6px;
   }
   ._scroll {
     max-height: 400px;
@@ -80,9 +80,9 @@ const DashboardRemoteHosts = () => (
                   </div>
                   <div>
                     <Link to={'/devices/'+h.latestMac} >{h.latestMac}</Link>
-                    <div className='_when'>
+                    <span className='_when'>
                       {moment(h.latestHit).from(new Date())}
-                    </div>
+                    </span>
                   </div>
                 </div>
               ))}

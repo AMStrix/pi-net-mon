@@ -26,8 +26,7 @@ const ContentWrapper = styled.div`
   background: ${c.background};
   display: flex;
   flex: 1;
-  padding-left: 210px;
-  padding-right: 10px;
+  padding-left: 200px;
 `;
 
 class App extends Component {
