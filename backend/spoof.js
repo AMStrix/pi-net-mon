@@ -2,6 +2,7 @@ const childProcess = require('child_process');
 const sh = require('shelljs');
 const nmap = require('./node-nmap');
 
+const l = require('./log');
 const f = require('./f');
 const db = require('./db');
 
@@ -190,14 +191,14 @@ function arpSpoof(ip) {
   let args = ['-i', 'eth0', '-t', ip, '-r', thisGateway()];
   let child = childProcess.spawn('arpspoof', args);
   spoofing[ip] = child;
-  //child.stdout.on('data', d => console.log('arpspoof.std >>>\n', d.toString()));
-  //child.stderr.on('data', e => console.log('arpspoof.err >>>\n', e.toString()));
+  child.stdout.on('data', d => l.verbose(d));
+  child.stderr.on('data', e => l.verbose(e));
   child.on('close', x => {
-    console.log('CLOSE arpspoof', ip, 'code: ', x);
+    l.info('CLOSE arpspoof', ip, 'code: ', x);
     spoofing[ip] = null; // clear the child after close
   });
   child.on('error', e => {
-    console.log('ERROR arpspoof', ip, e);
+    l.error('arpspoof', ip, e);
   })
 }
 

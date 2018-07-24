@@ -4,6 +4,7 @@ const sh = require('shelljs');
 const Tail = require('tail').Tail;
 const readdir = util.promisify(fs.readdir);
 
+const l = require('./log');
 const f = require('./f');
 const db = require('./db');
 
@@ -23,7 +24,7 @@ function init() {
 }
 
 function addError(e) {
-  console.log('ERROR bro.js', e);
+  l.info('ERROR bro.js', e);
   state.errors.push(e.toString());
   return true;
 }
@@ -52,7 +53,7 @@ let lastDnsUid = null;
 const broHandlers = {
   http: d => {
     d = JSON.parse(d);
-    console.log('http| ', d['id.orig_h'], d.method, d.host, d['id.resp_h'], d.uri);
+    l.info(`bro http > ${d['id.orig_h']} ${d.method} ${d.host} ${d['id.resp_h']} ${d.uri}`);
     db.ipToMac(d['id.orig_h']).then(mac => 
       db.updateRemoteHostHit({
         host: d.host,
@@ -68,7 +69,7 @@ const broHandlers = {
   },
   ssl: d => {
     d = JSON.parse(d);
-    console.log('ssl| ', d['id.orig_h'], d.version, d.server_name, d['id.resp_h']);
+    l.info(`bro ssl > ${d['id.orig_h']} ${d.version} ${d.server_name} ${d['id.resp_h']}`);
     db.ipToMac(d['id.orig_h']).then(mac => 
       db.updateRemoteHostHit({
         host: d.server_name || d['id.resp_h'],
@@ -89,7 +90,7 @@ const broHandlers = {
     d = JSON.parse(d);
     if (d.uid === lastDnsUid) { return; } // 2 ident. dns entries coming on the log
     lastDnsUid = d.uid;
-    console.log('dns| ', d['id.orig_h'], d.query, d.uid);
+    l.info(`bro dns > ${d['id.orig_h']} ${d.query} ${d.uid}`);
     if (d['id.resp_p'] != 53) return; // ignore avahi/bonjour & 137 &etc. for now
     if (!d.query) return; // ignore if no query (host)
     db.ipToMac(d['id.orig_h']).then(mac => 
@@ -114,14 +115,18 @@ function handleFilechange(src, d) {
 
 const watching = {};
 
+function touch(path) {
+  fs.closeSync(fs.openSync(path, 'a'));
+}
+
 function watch(eventSource, path) {
-  fs.closeSync(fs.openSync(path, 'a')); // touch (in case non-existing)
-  console.log(eventSource, path);
+  touch(path); // touch (in case non-existing)
+  l.info('bro.js watching bro log file ' + path);
   watching[eventSource] = new Tail(path, { follow: true });
   watching[eventSource].on('line', d => handleFilechange(eventSource, d));
   watching[eventSource].on('error', e => {
-    fs.closeSync(fs.openSync(path, 'a'));
-    console.log('bro.js watch error: ', e);
+    touch(path);
+    l.error('bro.js watch bro log file error: ' + JSON.stringify(e, null, 2));
     watching[eventSource].unwatch();
     watching[eventSource].watch();
   });

@@ -1,10 +1,12 @@
-let express = require('express');
+const express = require('express');
 
-let session = require('./session');
-let gql = require('./gql');
-let spoof = require('./spoof');
+const session = require('./session');
+const gql = require('./gql');
 
-var app = express();
+const l = require('./log');
+const spoof = require('./spoof');
+
+const app = express();
 
 app.use(session);
 app.use((req, res, next) => {
@@ -13,11 +15,11 @@ app.use((req, res, next) => {
   next();
 })
 app.use('/graphql', gql);
-app.listen(4000, () => console.log('GraphQL started on localhost:4000/graphql'));
+app.listen(4000, () => l.info('GraphQL started on localhost:4000/graphql'));
 
 
 async function handleExit(signal) {
-  console.log(`*** pi-net-mon shutting down (${signal}) ***`);
+  l.info(`*** pi-net-mon shutting down (${signal}) ***`);
   spoof.onExit().then(() => process.exit());
 }
 

@@ -16,7 +16,8 @@
     "node-nmap": "^4.0.0",
     "shelljs": "^0.8.2",
     "tail": "^1.2.4",
-    "uuid": "^3.3.2"
+    "uuid": "^3.3.2",
+    "winston": "^3.0.0"
   },
   "devDependencies": {
     "nodemon": "^1.17.5"
