@@ -14,21 +14,6 @@ const db = require('./db');
 
 spoof.start();
 
-// const dateTime = new GraphQLScalarType({
-//   name: 'Date',
-//   description: 'Date scalar',
-//   serialize(value) {
-//     return value.toISOString();
-//   },
-//   parseValue(value) {
-//     return new Date(value);
-//   },
-//   parseLiteral(ast) {
-//     throw 'test parseLiteral';
-//     return new Date(ast.value);
-//   }
-// });
-
 let schema = buildSchema(`
   scalar Date
 
@@ -97,6 +82,7 @@ let schema = buildSchema(`
   }
   type RemoteHost {
     host: String
+    birthday: Date
     latestHit: Date
     latestMac: String
     assocHost: [String]

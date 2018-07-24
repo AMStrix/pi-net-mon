@@ -196,7 +196,13 @@ function makeHostUpdate(raw) {
   }
   return out;
 }
-
+function handleNewHost(hostDoc) {
+  // console.log('NEW HOST', JSON.stringify(hostDoc));
+  if (hostDoc.birthday) { return; } // already has birthday
+  db.remoteHosts.update({ host: hostDoc.host }, { $set: { birthday: new Date() } }, (err, r) => {
+    err && (console.log(`handleNewHost(${hostDoc.host}) error: `, err, JSON.stringify(hostDoc)));
+  })
+}
 module.exports.updateRemoteHostHit = (raw) => {
   const forDb = makeHostUpdate(raw);
   //console.log('>>>> makeHostUpdate wet run:\n', JSON.stringify(forDb,null,2), '\n\n');
@@ -205,8 +211,9 @@ module.exports.updateRemoteHostHit = (raw) => {
       { host: raw.host },
       forDb,
       { upsert: true },
-      (e, reps, up) => {
+      (e, reps, upserted) => {
         e && console.log('updateRemoteHost error', e, JSON.stringify(raw));
+        upserted && handleNewHost(upserted);
         res();
       }
     )

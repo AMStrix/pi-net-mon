@@ -194,7 +194,7 @@ function arpSpoof(ip) {
   child.stdout.on('data', d => l.verbose(d));
   child.stderr.on('data', e => l.verbose(e));
   child.on('close', x => {
-    l.info('CLOSE arpspoof', ip, 'code: ', x);
+    l.info(`CLOSE arpspoof ${ip} with code: ${x}`);
     spoofing[ip] = null; // clear the child after close
   });
   child.on('error', e => {

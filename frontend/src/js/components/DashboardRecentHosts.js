@@ -7,12 +7,15 @@ import { List, Icon, Loader } from 'semantic-ui-react';
 import moment from 'moment';
 import styled from 'styled-components';
 
+import { lightBlue } from '../colors';
+import { isHostNewToday } from './util';
 import Grid from './Grid';
 
 const REMOTE_HOSTS = gql`
   query remoteHosts($sortField: String, $sortDir: Int, $skip: Int, $limit: Int) {
     remoteHosts(sortField: $sortField, sortDir: $sortDir, skip: $skip, limit: $limit) {
       host
+      birthday
       latestHit
       latestMac
       assocHost
@@ -43,6 +46,13 @@ const Style = styled.div`
   ._host {
     font-weight: bold;
   }
+  ._newHost {
+    font-weight: bold;
+    background: ${lightBlue};
+    display: inline-block;
+    border-radius: 0.5em;
+    padding: 0 0.5em;
+  }
   & a, & ._when {
     font-size: 0.9em;
   }
@@ -70,12 +80,15 @@ const DashboardRemoteHosts = () => (
 
         return (
           <Style>
-            <div>Recent Hosts</div>
+            <div>
+              Recent Hosts
+              <div className='_newHost' style={{ float: 'right', fontSize: '0.8em' }}>new today</div>
+            </div>
             <hr />
             <div className='_middle _scroll'>
               { remoteHosts.map(h => (
                 <div className='_hostWrap' key={h.host}>
-                  <div className='_host'>
+                  <div className={isHostNewToday(h)?'_newHost':'_host'}>
                     {h.host}
                   </div>
                   <div>

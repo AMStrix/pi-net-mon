@@ -66,3 +66,10 @@ module.exports.processActiveHostsHourlySums = activeHosts => {
   out.map(x => x.v).map((x, i, arr) => isMaxima(x,i,arr));
   return out.reverse();
 }
+
+module.exports.isHostNewToday = host => {
+  //console.log(`is ${host.host} with birthday ${host.birthday} new?`);
+  return host.birthday ?
+    (new Date()).getDate() === (new Date(host.birthday)).getDate() :
+    false;
+}
