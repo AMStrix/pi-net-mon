@@ -190,7 +190,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
         }
       </div>
       <hr />
-      <div className='_middle'>
+      <div className='_middle' style={{ height: '60px' }} >
         {p.vendor || '(no vendor discovered)'}<br/>
         {p.os || '(os not detected)'}
       </div>
@@ -255,7 +255,7 @@ const SpoofControl = ({isSpoof, latestIp: { ip }}) => (
     <span>
       <Button 
         className="_scanButton"
-        content={isSpoof ? 'stop monitoring' : 'start monitoring'} 
+        content={isSpoof ? 'spoof: off' : 'spoof: on'} 
         size='mini' 
         loading={loading}
         disabled={loading}
