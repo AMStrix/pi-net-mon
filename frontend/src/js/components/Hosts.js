@@ -3,7 +3,7 @@ import { Query, Mutation } from 'react-apollo';
 import gql from 'graphql-tag';
 import { Route, Switch, Redirect, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { Button, Icon, Popup } from 'semantic-ui-react';
+import { Dropdown } from 'semantic-ui-react';
 import moment from 'moment';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
@@ -22,13 +22,18 @@ const ACTIVE_HOSTS = gql`
 const Style = styled.div`
   width: 100%;
   & ._graphHead {
-    font-weight: bold;
-    font-size: 1.1em;
     margin-top: 10px;
     margin-bottom: -1.1em;
     margin-left: 20px;
+    position: relative;
+    z-index: 1;
   }
 `;
+
+const graphOptions = [
+  { text: 'Host Activity (24h)', value: 'all'},
+  { text: 'Host Activity by Device (24h)', value: 'devices'}
+]
 
 const Hosts = ({ match: { url }}) => (
     <Switch>
@@ -39,7 +44,13 @@ const Hosts = ({ match: { url }}) => (
         render={() => (
           <Grid>
             <Style>
-              <div className='_graphHead'>All Host Activity (24h)</div>
+              <div className='_graphHead'>
+                <Dropdown 
+                  inline 
+                  options={graphOptions} 
+                  defaultValue={graphOptions[0].value}
+                />
+              </div>
               <Activity />
             </Style>
           </Grid>
