@@ -43,6 +43,15 @@ function groupHourlySums(sums, host) {
   return sums;
 }
 
+function interpolateLastHour(arr) {
+  let minutes = (new Date()).getMinutes();
+  let pct = minutes/60;
+  let prev = arr[arr.length-2].v;
+  let pen = arr[arr.length-1].v;
+  arr[arr.length-1].v = (1 - pct) * prev + pct * pen;
+  return arr;
+}
+
 module.exports.processActiveHostsHourlySums = activeHosts => {
   const map = activeHosts && activeHosts
     .reduce(groupHourlySums, {}) || [];
@@ -64,7 +73,7 @@ module.exports.processActiveHostsHourlySums = activeHosts => {
     m && sig(x, arr[i-1], arr[i+1]) && (out[i].maxima = true);
   }
   out.map(x => x.v).map((x, i, arr) => isMaxima(x,i,arr));
-  return out.reverse();
+  return interpolateLastHour(out.reverse());
 }
 
 module.exports.isHostNewToday = host => {
