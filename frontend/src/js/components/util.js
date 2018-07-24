@@ -46,14 +46,23 @@ function groupHourlySums(sums, host) {
 module.exports.processActiveHostsHourlySums = activeHosts => {
   const map = activeHosts && activeHosts
     .reduce(groupHourlySums, {}) || [];
+  let max = Object.values(map).reduce((m, x) => m > x ? m : x, 0);
   const start = new Date();
   const mkey = d => 'd' + d.getUTCDate() + 'h' + d.getUTCHours();
   const out = _.range(24).map(h => {
     let k = mkey(start);
     let d = new Date(+start);
     let z = { ts: moment(d).format('ha'), v: (map[k] || 0) };
-    start.setHours(start.getHours() -1);
+    start.setHours(start.getHours() - 1);
     return z;
   });
+  const isMaxima = (x, i, arr) => {
+    const gt = (a, b) => _.isNumber(b) ? a > b : true;
+    const m = gt(x, arr[i-1]) && gt(x, arr[i+1]);
+    const sig = (x, b, a) => 
+      (Math.abs(x - b) > 0.05 * max) || (Math.abs(x - b) > 0.05 * max);
+    m && sig(x, arr[i-1], arr[i+1]) && (out[i].maxima = true);
+  }
+  out.map(x => x.v).map((x, i, arr) => isMaxima(x,i,arr));
   return out.reverse();
 }

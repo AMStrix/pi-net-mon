@@ -5,7 +5,7 @@ import { Route, Switch, Redirect, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { Button, Icon, Popup } from 'semantic-ui-react';
 import moment from 'moment';
-import { AreaChart, Area, XAxis, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
 import { processActiveHostsHourlySums } from './util';
 import Grid from './Grid';
@@ -19,6 +19,17 @@ const ACTIVE_HOSTS = gql`
   }
 `;
 
+const Style = styled.div`
+  width: 100%;
+  & ._graphHead {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-top: 10px;
+    margin-bottom: -1.1em;
+    margin-left: 20px;
+  }
+`;
+
 const Hosts = ({ match: { url }}) => (
     <Switch>
       {/*<Route path={url + '/:host'} component={Host} />*/}
@@ -27,10 +38,10 @@ const Hosts = ({ match: { url }}) => (
         exact={true} 
         render={() => (
           <Grid>
-            <div style={{ width: '100%' }}>
-              <div>Hosts</div>
+            <Style>
+              <div className='_graphHead'>All Host Activity (24h)</div>
               <Activity />
-            </div>
+            </Style>
           </Grid>
         )} 
       />
@@ -54,6 +65,18 @@ const Activity = () => (
   </Query>
 );
 
+const Maxima = (p) => {
+  //console.log(p);
+  const rAlign = p.width - p.cx < 50;
+  const h = 1;
+  const w = 20;
+  if (!p.payload.maxima) { return null; }
+  return (<g>
+    <rect x={p.cx-(rAlign?w:0)} y={p.cy-h} width={w-2} height={h} fill='gray' />
+    <text x={p.cx+(rAlign?(-w):w)} y={p.cy+(10/3)} textAnchor={rAlign?'end':'start'} fontSize="10" fill="gray">{p.payload.v}</text>
+  </g>);
+};
+
 const ActivityChart = ({data}) =>(
   <ResponsiveContainer height={150}>
     <AreaChart data={data} margin={{ left: 0, top: 0, right: 0, bottom: 0 }}>
@@ -64,7 +87,8 @@ const ActivityChart = ({data}) =>(
         </linearGradient>
       </defs>
       <XAxis dataKey='ts' interval='preserveStartEnd' axisLine={false} tickSize={0} tick={{ fontSize: 10 }} />
-      <Area stackId='0' type='monotone' dataKey='v' stroke='#ff7a00' fillOpacity={1} fill="url(#colorUv)" />
+      {/*<YAxis dataKey='v' interval='preserveEnd' axisLine={false} tickSize={0} tick={{ fontSize: 10 }} tickMargin={-10} />*/}
+      <Area dot={<Maxima/>} stackId='0' type='monotone' dataKey='v' stroke='#ff7a00' fillOpacity={1} fill="url(#colorUv)" />
       {/*<Area stackId='0' type='monotone' dataKey='pv' fill='blue' />*/}
     </AreaChart>
   </ResponsiveContainer>
