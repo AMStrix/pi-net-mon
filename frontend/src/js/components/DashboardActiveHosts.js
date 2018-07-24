@@ -8,6 +8,7 @@ import { List, Icon, Loader } from 'semantic-ui-react';
 import moment from 'moment';
 import styled from 'styled-components';
 
+import { orange } from '../colors';
 import { processActiveHostHitSums } from './util';
 import Grid from './Grid';
 
@@ -37,9 +38,9 @@ const Style = styled.div`
       bottom: 1px;
       border-radius: 0 0.5em 0.5em 0;
       background: linear-gradient(to right, 
-        rgba(118,166,255,0) 0%,
-        rgba(118,166,255,0.2) 50%,
-        rgba(118,166,255,1) 100%);
+        ${orange.alpha(0)} 0%,
+        ${orange.alpha(0.2)} 50%,
+        ${orange} 100%);
     }
   }
   ._host {
@@ -52,10 +53,9 @@ const Style = styled.div`
     max-height: 400px;
     overflow-y: auto;
     margin-right: -8px; // todo: smarten
+    overflow-x: hidden;
   }
 `;
-
-
 
 const DashboardActiveHosts = () => (
   <Grid.Item>

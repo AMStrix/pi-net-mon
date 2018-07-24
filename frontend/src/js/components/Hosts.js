@@ -7,6 +7,7 @@ import { Dropdown } from 'semantic-ui-react';
 import moment from 'moment';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
+import { orange } from '../colors';
 import { processActiveHostsHourlySums } from './util';
 import Grid from './Grid';
 
@@ -93,8 +94,8 @@ const ActivityChart = ({data}) =>(
     <AreaChart data={data} margin={{ left: 0, top: 0, right: 0, bottom: 0 }}>
       <defs>
         <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="10%" stopColor="#ff7a00" stopOpacity={0.8}/>
-          <stop offset="95%" stopColor="#ff7a00" stopOpacity={0}/>
+          <stop offset="10%" stopColor={orange} stopOpacity={0.8}/>
+          <stop offset="95%" stopColor={orange} stopOpacity={0}/>
         </linearGradient>
       </defs>
       <XAxis dataKey='ts' interval='preserveStartEnd' axisLine={false} tickSize={0} tick={{ fontSize: 10 }} />
