@@ -100,6 +100,7 @@ let schema = buildSchema(`
     broStatus: BroStatus
     status: Status
     devices: [Device]
+    device(mac: String!): Device
     spoofStatus: SpoofStatus
     remoteHosts(sortField: String, sortDir: Int, skip: Int, limit: Int): [RemoteHost]
     activeHosts(period: String): [RemoteHost]
@@ -123,10 +124,15 @@ function dateToIsoString(obj, field) {
 }
 
 function devicesToGql(devices) {
-  devices.forEach(d => d.ips && (d.ips = Object.values(d.ips)));
-  devices.forEach(d => d.ports && (d.ports = Object.values(d.ports)));
+  devices.forEach(deviceToGql);
   return devices;
 };
+
+function deviceToGql(d) {
+  d.ips && (d.ips = Object.values(d.ips));
+  d.ports && (d.ports = Object.values(d.ports));
+  return d;
+}
 
 function login({user, pass}, {session}) {
   return db.authorize(user, pass)
@@ -160,6 +166,7 @@ const histPaths = {
 let root = {
   installStatus: install.getState,
   devices: () => db.getDevices().then(devicesToGql),
+  device: ({mac}) => db.getDevice(mac).then(deviceToGql),
   broStatus: bro.getState,
   status: status,
   spoofStatus: () => spoof.state,

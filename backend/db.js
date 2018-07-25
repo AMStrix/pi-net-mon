@@ -176,6 +176,9 @@ module.exports.getDevices = (searchObj) =>
     db.devices.find(searchObj || {}, (e, ds) => e ? rej(e) : res(ds));
   });
 
+module.exports.getDevice = mac => new Promise((res, rej) =>
+  db.devices.findOne({ mac: mac }, (e, d) => e ? rej(e) : res(d)));
+
 
 function makeHostUpdate(raw) {
   if (!raw.host) { throw new Error('makeHostUpdate(raw) req host, was: ' + raw); }

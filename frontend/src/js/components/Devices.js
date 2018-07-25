@@ -26,28 +26,12 @@ const SPOOF_STATUS = `
     }
 `;
 
-const DEVICE = `
-    mac
-    vendor
-    os
-    isSensor
-    isGateway
-    isSpoof
-    latestIp { ip seen }
-    ips { ip seen }
-    ports {
-      port
-      protocol
-      service
-      seen
-    }
-`;
-
 const DEVICES = gql`
   query devices {
-    devices {${DEVICE}}
+    devices {...FullDevice}
     spoofStatus {${SPOOF_STATUS}}
   }
+  ${Device.FULL_DEVICE}
 `;
 
 const SCAN = gql`
@@ -62,10 +46,11 @@ const SCAN = gql`
 const SPOOF_DEVICE = gql`
   mutation spoofDevice($ip: String!, $isSpoof: Boolean) {
     spoofDevice(ip: $ip, isSpoof: $isSpoof) {
-      devices {${DEVICE}}
+      devices {...FullDevice}
       spoofError
     }
   }
+  ${Device.FULL_DEVICE}
 `;
 
 function fmtDuration(ms) {
@@ -323,5 +308,6 @@ class NoticeOverlay extends Component {
     );
   }
 } 
+
 
 export default Devices;
