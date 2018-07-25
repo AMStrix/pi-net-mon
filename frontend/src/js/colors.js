@@ -15,5 +15,6 @@ module.exports = {
   background: '#f1f1f1',
   blue: 'rgba(118,166,255,1)',
   lightBlue: 'rgba(118,166,255,0.5)',
-  orange: c('rgb(255, 122, 0)')
+  orange: c('rgb(255, 122, 0)'),
+  grayText: c('#888888')
 }

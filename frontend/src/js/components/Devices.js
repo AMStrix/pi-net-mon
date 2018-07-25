@@ -6,52 +6,11 @@ import styled from 'styled-components';
 import { Button, Icon, Popup } from 'semantic-ui-react';
 import moment from 'moment';
 
+import { SPOOF_STATUS, SPOOF_DEVICE, DEVICES, SCAN } from './gql';
 import Grid from './Grid';
 import SlideLabel from './SlideLabel';
 import Device from './Device';
-
-const SPOOF_STATUS = `
-    errors
-    pingSweep {
-      host
-      scanStart
-      scanTime
-      processing
-    }
-    portScan {
-      host
-      scanStart
-      scanTime
-      processing
-    }
-`;
-
-const DEVICES = gql`
-  query devices {
-    devices {...FullDevice}
-    spoofStatus {${SPOOF_STATUS}}
-  }
-  ${Device.FULL_DEVICE}
-`;
-
-const SCAN = gql`
-  mutation scan($ip: String!) {
-    scan(ip: $ip) {
-      spoofStatus {${SPOOF_STATUS}}
-      scanError
-    }
-  }
-`;
-
-const SPOOF_DEVICE = gql`
-  mutation spoofDevice($ip: String!, $isSpoof: Boolean) {
-    spoofDevice(ip: $ip, isSpoof: $isSpoof) {
-      devices {...FullDevice}
-      spoofError
-    }
-  }
-  ${Device.FULL_DEVICE}
-`;
+import SpoofControl from './SpoofControl';
 
 function fmtDuration(ms) {
   if (ms < 1000) {
@@ -184,7 +143,9 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
         <Icon name='clock' />
         { moment(p.latestIp.seen).from(new Date()) }
         <ScanControl {...p} />
-        <SpoofControl {...p} />
+        <SpoofControl device={p} type='button' style={{ float: 'right' }} errorContent={
+          error => <NoticeOverlay content={<span><Icon name='warning' />{ error }</span>} />
+        }/>
       </div>
     </Grid.Item>
   );
@@ -205,7 +166,6 @@ const ScanControl = ({isScanning, latestIp: { ip }}) => (
   {(scan, {data, loading}) => (
     <span>
       <Button 
-        className="_scanButton"
         content='scan now' 
         size='mini' 
         loading={loading}
@@ -224,39 +184,38 @@ const ScanControl = ({isScanning, latestIp: { ip }}) => (
   </Mutation>
 );
 
-const SpoofControl = ({isSpoof, latestIp: { ip }}) => (
-  <Mutation 
-    mutation={SPOOF_DEVICE}
-    update={(cache, { data: {spoofDevice}}) => {
-      const query = cache.readQuery({ query: DEVICES });
-      query.devices = spoofDevice.devices;
-      cache.writeQuery({
-        query: DEVICES,
-        data: query
-      });
-    }}
-  > 
-  {(spoofDevice, {data, loading}) => ( 
-    <span>
-      <Button 
-        className="_scanButton"
-        content={isSpoof ? 'spoof: off' : 'spoof: on'} 
-        size='mini' 
-        loading={loading}
-        disabled={loading}
-        style={{padding: '4px 6px', float: 'right'}}
-        onClick={() => spoofDevice({ variables: { ip: ip, isSpoof: !isSpoof } })} 
-      />
-      { data && data.spoofDevice.spoofError && <NoticeOverlay content={
-        <span>
-          <Icon name='warning' />
-          { data.spoofDevice.spoofError }
-        </span>
-      } />} 
-    </span> 
-  )}
-  </Mutation>
-);
+// const SpoofControl = ({isSpoof, latestIp: { ip }}) => (
+//   <Mutation 
+//     mutation={SPOOF_DEVICE}
+//     update={(cache, { data: {spoofDevice}}) => {
+//       const query = cache.readQuery({ query: DEVICES });
+//       query.devices = spoofDevice.devices;
+//       cache.writeQuery({
+//         query: DEVICES,
+//         data: query
+//       });
+//     }}
+//   > 
+//   {(spoofDevice, {data, loading}) => ( 
+//     <span>
+//       <Button 
+//         content={isSpoof ? 'spoof: off' : 'spoof: on'} 
+//         size='mini' 
+//         loading={loading}
+//         disabled={loading}
+//         style={{padding: '4px 6px', float: 'right'}}
+//         onClick={() => spoofDevice({ variables: { ip: ip, isSpoof: !isSpoof } })} 
+//       />
+//       { data && data.spoofDevice.spoofError && <NoticeOverlay content={
+//         <span>
+//           <Icon name='warning' />
+//           { data.spoofDevice.spoofError }
+//         </span>
+//       } />} 
+//     </span> 
+//   )}
+//   </Mutation>
+// );
 
 const Overlay = ({onHide, children}) => (
   <Grid.Overlay>

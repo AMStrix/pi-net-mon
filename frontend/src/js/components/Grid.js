@@ -52,15 +52,6 @@ Grid.Item = styled.div`
     font-size: 0.8em;
     color: #9a9a9a;
   }
-  ._scanButton {
-    visibility: hidden;
-    opacity: 0;
-    transition: visibility 0s, opacity 300ms linear;
-  }
-  &:hover ._scanButton {
-    visibility: visible;
-    opacity: 1;
-  }
 `;
 Grid.Overlay = styled.div`
   z-index: 100;

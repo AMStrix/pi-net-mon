@@ -71,7 +71,7 @@ const DashboardRemoteHosts = () => (
   <Grid.Item>
     <Query 
       query={REMOTE_HOSTS} 
-      variables={{ sortField: 'latestHit', sortDir: -1, skip: 0, limit: 20 }} 
+      variables={{ sortField: 'latestHit', sortDir: -1, skip: 0, limit: 200 }} 
       pollInterval={30000}
     >
       {({ loading, error, data: {remoteHosts} }) => {
