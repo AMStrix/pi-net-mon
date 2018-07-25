@@ -50,10 +50,9 @@ function makeLocalIp(d) {
 function ipToKey(ip) { return ip.replace(/\./g, '-'); }
 
 function deviceRawToDb(d) {
-  let now = new Date();
   d.mac = d.mac.toUpperCase();
-  if (d.ip) {
-    let ipObj = { ip: d.ip, seen: now };
+  if (d.ip && d.seen) {
+    let ipObj = { ip: d.ip, seen: d.seen };
     d.latestIp = ipObj;
     d.ips = {};
     d.ips[ipToKey(d.ip)] = ipObj;
@@ -65,12 +64,12 @@ function deviceRawToDb(d) {
   }
   if (d.openPorts) {
     d.ports = d.openPorts.reduce((a, x) => {
-      x.seen = now;
       a[x.port] = x;
       return a;
     }, {});
     delete d.openPorts;
   }
+  delete d.seen;
   return d;
 }
 

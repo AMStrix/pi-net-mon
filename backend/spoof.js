@@ -81,6 +81,7 @@ function pingSweep() {
         if (d.ip === gwIp) {
           d.isGateway = true;
         }
+        d.seen = new Date();
       });
       ds.forEach(db.updateLocalIp);
       ds.forEach(db.updateDevice);
@@ -145,6 +146,8 @@ function portScan(forcedIp) {
           ds.forEach(d => {
             !d.mac && d.ip === thisIp() && (d.mac = thisMac());
             d.lastPortscanTime = new Date();
+            d.seen = new Date();
+            d.openPorts.forEach(p => p.seen = new Date());
             db.updateDevice(d);
           });
           currentPortScan = null;
