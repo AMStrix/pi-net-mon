@@ -18,6 +18,7 @@ export const SPOOF_STATUS = `
 
 export const FULL_DEVICE = gql`
   fragment FullDevice on Device { 
+    id
     mac
     vendor
     os
@@ -70,3 +71,53 @@ export const SPOOF_DEVICE = gql`
   }
   ${FULL_DEVICE}
 `;
+
+export const ACTIVE_HOSTS = gql`
+  query activeHosts($period: String) {
+    activeHosts(period: $period) {
+      id
+      host
+      hits
+    }
+  }
+`;
+
+export const REMOTE_HOSTS = gql`
+  query remoteHosts($sortField: String, $sortDir: Int, $skip: Int, $limit: Int) {
+    remoteHosts(sortField: $sortField, sortDir: $sortDir, skip: $skip, limit: $limit) {
+      id
+      host
+      birthday
+      latestHit
+      latestMac
+      assocHost
+      sources
+      protocols
+      services
+      macs
+    }
+  }
+`;
+
+export const DEPLOY_BRO = gql`
+  mutation deploy {
+    deployBro {
+      isDeployed
+      status
+      errors
+    }
+  }
+`;
+
+export const BRO_STATUS = gql`
+  query broStatus {
+    broStatus {
+      version
+      isDeployed
+      status
+      errors
+    }
+  }
+`;
+
+

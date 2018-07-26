@@ -7,35 +7,10 @@ import { List, Icon, Loader } from 'semantic-ui-react';
 import moment from 'moment';
 import styled from 'styled-components';
 
+import { REMOTE_HOSTS } from './gql';
 import { lightBlue } from '../colors';
 import { isHostNewToday } from './util';
 import Grid from './Grid';
-
-const REMOTE_HOSTS = gql`
-  query remoteHosts($sortField: String, $sortDir: Int, $skip: Int, $limit: Int) {
-    remoteHosts(sortField: $sortField, sortDir: $sortDir, skip: $skip, limit: $limit) {
-      host
-      birthday
-      latestHit
-      latestMac
-      assocHost
-      sources
-      protocols
-      services
-      macs
-    }
-  }
-`;
-
-const DEPLOY = gql`
-  mutation deploy {
-    deployBro {
-      isDeployed
-      status
-      errors
-    }
-  }
-`;
 
 const Style = styled.div`
   ._hostWrap {

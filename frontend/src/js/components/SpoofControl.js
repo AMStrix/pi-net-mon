@@ -19,19 +19,7 @@ const SpoofControl = ({
     errorContent, 
     device: {mac, isSpoof, isSensor, isGateway, latestIp: { ip }}
   }) => (
-  <Mutation 
-    mutation={SPOOF_DEVICE}
-    update={(cache, { data: {spoofDevice}}) => {
-      try {
-        const deviceQuery = cache.readQuery({ query: DEVICE, variables: { mac: mac } });
-        deviceQuery.device = spoofDevice.devices.find(d => d.mac == mac);
-        cache.writeQuery({ query: DEVICE, data: deviceQuery, variables: { mac: mac } });
-      } catch (e) { /* error if device.mac not found, ignore */ }
-      const query = cache.readQuery({ query: DEVICES });
-      query.devices = spoofDevice.devices;
-      cache.writeQuery({ query: DEVICES, data: query });
-    }}
-  > 
+  <Mutation mutation={SPOOF_DEVICE}> 
   {(spoofDevice, {data, loading}) => ( 
     <Style style={style}>
       {type == 'button' &&

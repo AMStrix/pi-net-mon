@@ -4,27 +4,8 @@ import { graphql, Query, Mutation } from 'react-apollo';
 import gql from 'graphql-tag';
 import { List, Icon, Loader } from 'semantic-ui-react'
 
+import { BRO_STATUS, DEPLOY_BRO } from './gql';
 import Grid from './Grid';
-
-const BRO_STATUS = gql`
-  query broStatus {
-    broStatus {
-      version
-      isDeployed
-      status
-      errors
-    }
-  }
-`;
-const DEPLOY = gql`
-  mutation deploy {
-    deployBro {
-      isDeployed
-      status
-      errors
-    }
-  }
-`;
 
 const DashboardBro = () => (
   <Grid.Item>
@@ -53,7 +34,7 @@ const DashboardBro = () => (
 
 const Deploy = () => (
   <Mutation
-    mutation={DEPLOY}
+    mutation={DEPLOY_BRO}
     update={(cache, { data: { deploy }}) => {
 
     }}

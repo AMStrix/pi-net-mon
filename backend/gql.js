@@ -40,6 +40,7 @@ let schema = buildSchema(`
     seen: Date
   }
   type Device {
+    id: String!
     mac: String!
     vendor: String
     os: String
@@ -81,7 +82,8 @@ let schema = buildSchema(`
     spoofError: String
   }
   type RemoteHost {
-    host: String
+    id: String!
+    host: String!
     birthday: Date
     latestHit: Date
     latestMac: String
@@ -129,9 +131,21 @@ function devicesToGql(devices) {
 };
 
 function deviceToGql(d) {
+  d.id = d.mac;
   d.ips && (d.ips = Object.values(d.ips));
   d.ports && (d.ports = Object.values(d.ports));
   return d;
+}
+
+function hostsToGql(hs) {
+  hs.forEach(hostToGql);
+  return hs;
+}
+
+function hostToGql(h) {
+  h.hits && (h.hits = JSON.stringify(h.hits));
+  h.id = h.host;
+  return h;
 }
 
 function login({user, pass}, {session}) {
@@ -167,10 +181,10 @@ let root = {
   spoofStatus: () => spoof.state,
   remoteHosts: ({sortField, sortDir, skip, limit}) => 
     db.getRemoteHosts(sortField, sortDir, skip, limit)
-    .then(hs => hs.map(h => h)),
+    .then(hostsToGql),
   activeHosts: ({period}) => {
     return db.getActiveHosts(new Date(Date.now() - 1000*60*60), new Date())
-      .then(ahs => ahs.map(ah => (ah.hits=JSON.stringify(ah.hits))&&ah));
+      .then(hostsToGql);
   },
 
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),

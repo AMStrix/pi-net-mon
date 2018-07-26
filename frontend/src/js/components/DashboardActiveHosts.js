@@ -8,18 +8,10 @@ import { List, Icon, Loader } from 'semantic-ui-react';
 import moment from 'moment';
 import styled from 'styled-components';
 
+import { ACTIVE_HOSTS } from './gql';
 import { orange } from '../colors';
 import { processActiveHostHitSums } from './util';
 import Grid from './Grid';
-
-const ACTIVE_HOSTS = gql`
-  query activeHosts($period: String) {
-    activeHosts(period: $period) {
-      host
-      hits
-    }
-  }
-`;
 
 const Style = styled.div`
   ._hostWrap {
