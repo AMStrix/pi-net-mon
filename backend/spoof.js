@@ -147,7 +147,7 @@ function portScan(forcedIp) {
             !d.mac && d.ip === thisIp() && (d.mac = thisMac());
             d.lastPortscanTime = new Date();
             d.seen = new Date();
-            d.openPorts.forEach(p => p.seen = new Date());
+            d.openPorts && d.openPorts.forEach(p => p.seen = new Date());
             db.updateDevice(d);
           });
           currentPortScan = null;
