@@ -64,6 +64,7 @@ const Style = styled.div`
     max-height: 400px;
     overflow-y: auto;
     margin-right: -8px; // todo: make Grid.Scrollable or sth.
+    overflow-x: hidden;
   }
 `;
 
