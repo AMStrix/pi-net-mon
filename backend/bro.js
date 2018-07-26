@@ -29,16 +29,16 @@ function addError(e) {
   return true;
 }
 
-const cmdVersion = f.memoizePeriodic(() => {
+const cmdVersion = f.memoizePeriodic(() => new Promise((res, rej) => {
   let out = sh.exec(BROBIN + ' --version', { silent: true }).stdout;
-  return out;
-});
+  res(out);
+}));
 
-const cmdStatus = f.memoizePeriodic(() => {
+const cmdStatus = f.memoizePeriodic(() => new Promise((res, rej) => {
   let out = sh.exec(BROBIN + ' status', { silent: true }).stdout;
   let search = /bro\s+standalone\s+localhost\s+(\w+)/.exec(out);
-  return search.length === 2 ? search[1] : null;
-}, 1000*60*5);
+  res(search.length === 2 ? search[1] : null);
+}), 1000*60*5);
 
 const cmdDeploy = () => {
   if (deploying) { return false; }
@@ -146,10 +146,13 @@ function watchLogs() {
 
 module.exports.getState = () => 
   new Promise((res, rej) => {
-    state.version = cmdVersion();
-    state.status = cmdStatus();
-    state.isDeployed = state.status === 'stopped' ? false : true;
-    res(state)
+    Promise.all([cmdVersion(), cmdStatus()])
+      .then(([version, status]) =>{
+        state.version = version;
+        state.status = status;
+        state.isDeployed = state.status === 'stopped' ? false : true;
+        res(state)
+      });
   })
   .catch(e => addError('updateState error: ' + e) && state);
 
