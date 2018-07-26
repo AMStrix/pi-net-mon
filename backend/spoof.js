@@ -34,6 +34,7 @@ let state = {
 };
 
 function addError(e) {
+  l.error('spoof.js error' + JSON.stringify(e));
   console.log('ERROR spoof.js', e);
   state.errors.push(e.toString());
 }
@@ -201,7 +202,7 @@ function arpSpoof(ip) {
     spoofing[ip] = null; // clear the child after close
   });
   child.on('error', e => {
-    l.error('arpspoof', ip, e);
+    l.error('arpSpoof ' + ip + JSON.stringify(e));
   })
 }
 
