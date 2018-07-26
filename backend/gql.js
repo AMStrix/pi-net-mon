@@ -158,11 +158,6 @@ function checkAuth(session) {
   console.log('check auth', session);
 }
 
-const histPaths = {
-  '1h': d => [ymdh(new Date(+d - 1000*60*60)), ymdh(d)],
-  '1d': d => [_.dropRight(ymdh(new Date(+d - 1000*60*60*24))), _.dropRight(ymdh(d))]
-};
-
 let root = {
   installStatus: install.getState,
   devices: () => db.getDevices().then(devicesToGql),
@@ -174,8 +169,7 @@ let root = {
     db.getRemoteHosts(sortField, sortDir, skip, limit)
     .then(hs => hs.map(h => h)),
   activeHosts: ({period}) => {
-    let args = histPaths[period](new Date());
-    return db.getActiveHosts.apply(null, args)
+    return db.getActiveHosts(new Date(Date.now() - 1000*60*60), new Date())
       .then(ahs => ahs.map(ah => (ah.hits=JSON.stringify(ah.hits))&&ah));
   },
 

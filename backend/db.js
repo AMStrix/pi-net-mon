@@ -3,6 +3,7 @@ const Nedb = require('nedb');
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
 
+const l = require('./log');
 const f = require('./f');
 
 const DBS = ['users', 'localIps', 'devices', 'remoteHosts'];
@@ -84,7 +85,6 @@ function makeDevice(d, old) {
   return updated;
 }
 
-
 // exports
 module.exports = {};
 
@@ -148,6 +148,20 @@ module.exports.updateDevice = d => new Promise((res, rej) => {
   })
 });
 
+
+module.exports.updateDeviceHostHit = d => new Promise((res, rej) => {
+  if (!d.mac) { 
+    l.error('updateDeviceHostHit expected a mac, doc was ' + JSON.stringify(d));
+    res();
+    return;
+  }
+  const update = f.makeDeviceHostHitUpdate(d.host, d.latestHit);
+  db.devices.update({ mac: d.mac }, update, {}, (e, n) => {
+    e && console.log('updateDeviceHostHit error', e, JSON.stringify(d,null,2));
+    res();
+  });
+});
+
 module.exports.updateDeviceByIp = d => new Promise((res, rej) => {
   if (!d.ip) { throw new Error('db.js updateDeviceByIp, must have ip! was: ', d); }
   db.devices.findOne({ 'latestIp.ip': d.ip }, (e, old) => {
@@ -177,6 +191,10 @@ module.exports.getDevices = (searchObj) =>
 
 module.exports.getDevice = mac => new Promise((res, rej) =>
   db.devices.findOne({ mac: mac }, (e, d) => e ? rej(e) : res(d)));
+
+module.exports.getDeviceHits = (mac, from, to) => new Promise((res, rej) => {
+
+});
 
 
 function makeHostUpdate(raw) {
@@ -235,19 +253,8 @@ module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise
 });
 
 module.exports.getActiveHosts = (from, to) => new Promise((res, rej) => {
-  const bp = (s, p, v) => _.isNumber(v) ? (s + '.' + p + v) : s;
-  const makePath = (y, m, d, h) => _.zip(['y', 'm', 'd', 'h'], [y, m, d, h])
-    .reduce((a, x) => bp(a, x[0], x[1]), 'hits');
-  const pathFrom = makePath.apply(null, from);
-  const pathTo = makePath.apply(null, to);
-  const find = { $or: [{}, {}] }; 
-  const op = _.isNumber(from[3]) && { $gt: 0 } || { $exists: true };
-  find.$or[0][pathFrom] = op;
-  find.$or[1][pathTo] = op;
-  const proj = { host: 1 }; 
-  proj[pathFrom] = 1;
-  proj[pathTo] = 1;
-  db.remoteHosts.find(find, proj, (e,ds) =>{
+  const x = f.makeHitsByDateSearch(from, to);
+  db.remoteHosts.find(x.find, x.proj, (e,ds) =>{
     e && console.log(e);
     //ds.forEach(x => console.log(x.host, x.hits.y2018.m6.d23, x.hits.y2018.m6.d24));
     res(ds);

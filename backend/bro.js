@@ -93,16 +93,22 @@ const broHandlers = {
     l.info(`bro dns > ${d['id.orig_h']} ${d.query} ${d.uid}`);
     if (d['id.resp_p'] != 53) return; // ignore avahi/bonjour & 137 &etc. for now
     if (!d.query) return; // ignore if no query (host)
+    const hitTime = new Date(d.ts * 1000);
     db.ipToMac(d['id.orig_h']).then(mac => 
       mac && // only if we have a mac (for ipv6 addys)
       db.updateRemoteHostHit({
         host: d.query,
-        latestHit: new Date(d.ts*1000),
+        latestHit: hitTime,
         latestMac: mac,
         //assocHost: d['id.resp_h'], //gateway, consider "answers array"
         source: 'dns',
         protocol: d.proto,
         service: 'dns',
+        mac: mac
+      }) &&
+      db.updateDeviceHostHit({
+        host: d.query,
+        latestHit: hitTime,
         mac: mac
       })
     )
