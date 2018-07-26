@@ -85,6 +85,26 @@ function makeDevice(d, old) {
   return updated;
 }
 
+function makeHostUpdate(raw) {
+  if (!raw.host) { throw new Error('makeHostUpdate(raw) req host, was: ' + raw); }
+  const $set = (a, b, n, op, p) => b[n] && (_.set(a, `${op&&op+'.'||''}${n}${p&&'s'||''}`, b[n]));
+  const out = {};
+  $set(out, raw, 'latestHit', '$set');
+  $set(out, raw, 'latestMac', '$set');
+  $set(out, raw, 'assocHost', '$addToSet', true);
+  $set(out, raw, 'source', '$addToSet', true);
+  $set(out, raw, 'protocol', '$addToSet', true);
+  $set(out, raw, 'service', '$addToSet', true);
+  $set(out, raw, 'mac', '$addToSet', true);
+  if (raw.latestHit) {
+    const ymdh = f.ymdh(raw.latestHit);
+    const path = `hits.y${ymdh[0]}.m${ymdh[1]}.d${ymdh[2]}.h${ymdh[3]}`;
+    out.$inc = {};
+    out.$inc[path] = 1;
+  }
+  return out;
+}
+
 // exports
 module.exports = {};
 
@@ -108,22 +128,21 @@ module.exports.getAdmin = () =>
     });
   });
 
-module.exports.createAdmin = (user, pass) => 
-  new Promise((res, rej) => {
-    bcrypt.hash(pass, 10, (err, passHash) => {
-      if (err) { 
-        rej(e); 
-      } else {
-        db.users.insert({ 
-          username: user, 
-          password: passHash, 
-          role: 'admin' 
-        }, (e, d) => {
-          e ? rej(e) : res(d);
-        });
-      }
-    });
+module.exports.createAdmin = (user, pass) => new Promise((res, rej) => {
+  bcrypt.hash(pass, 10, (err, passHash) => {
+    if (err) { 
+      rej(e); 
+    } else {
+      db.users.insert({ 
+        username: user, 
+        password: passHash, 
+        role: 'admin' 
+      }, (e, d) => {
+        e ? rej(e) : res(d);
+      });
+    }
   });
+});
 
 module.exports.updateLocalIp = (d) => {
   db.localIps.update(
@@ -148,13 +167,8 @@ module.exports.updateDevice = d => new Promise((res, rej) => {
   })
 });
 
-
 module.exports.updateDeviceHostHit = d => new Promise((res, rej) => {
-  if (!d.mac) { 
-    l.error('updateDeviceHostHit expected a mac, doc was ' + JSON.stringify(d));
-    res();
-    return;
-  }
+  if (!d.mac) { throw new Error('updateDeviceHostHit expected a mac, doc was ',d); }
   const update = f.makeDeviceHostHitUpdate(d.host, d.latestHit);
   db.devices.update({ mac: d.mac }, update, {}, (e, n) => {
     e && console.log('updateDeviceHostHit error', e, JSON.stringify(d,null,2));
@@ -196,26 +210,6 @@ module.exports.getDeviceHits = (mac, from, to) => new Promise((res, rej) => {
 
 });
 
-
-function makeHostUpdate(raw) {
-  if (!raw.host) { throw new Error('makeHostUpdate(raw) req host, was: ' + raw); }
-  const $set = (a, b, n, op, p) => b[n] && (_.set(a, `${op&&op+'.'||''}${n}${p&&'s'||''}`, b[n]));
-  const out = {};
-  $set(out, raw, 'latestHit', '$set');
-  $set(out, raw, 'latestMac', '$set');
-  $set(out, raw, 'assocHost', '$addToSet', true);
-  $set(out, raw, 'source', '$addToSet', true);
-  $set(out, raw, 'protocol', '$addToSet', true);
-  $set(out, raw, 'service', '$addToSet', true);
-  $set(out, raw, 'mac', '$addToSet', true);
-  if (raw.latestHit) {
-    const ymdh = f.ymdh(raw.latestHit);
-    const path = `hits.y${ymdh[0]}.m${ymdh[1]}.d${ymdh[2]}.h${ymdh[3]}`;
-    out.$inc = {};
-    out.$inc[path] = 1;
-  }
-  return out;
-}
 function handleNewHost(hostDoc) {
   // console.log('NEW HOST', JSON.stringify(hostDoc));
   if (hostDoc.birthday) { return; } // already has birthday
@@ -223,6 +217,7 @@ function handleNewHost(hostDoc) {
     err && (console.log(`handleNewHost(${hostDoc.host}) error: `, err, JSON.stringify(hostDoc)));
   })
 }
+
 module.exports.updateRemoteHostHit = (raw) => {
   const forDb = makeHostUpdate(raw);
   //console.log('>>>> makeHostUpdate wet run:\n', JSON.stringify(forDb,null,2), '\n\n');
@@ -239,6 +234,7 @@ module.exports.updateRemoteHostHit = (raw) => {
     )
   });
 }
+
 module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise((res, rej) => {
   let sort = {};
   sortField && (sort[sortField] = sortDir) || (sort.latestHit = -1);
