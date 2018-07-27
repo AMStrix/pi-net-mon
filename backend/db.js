@@ -206,7 +206,7 @@ module.exports.ipToMac = f.memoizePeriodic(ip => new Promise((res, rej) =>
 
 module.exports.getDevices = (searchObj) => 
   new Promise((res, rej) => {
-    db.devices.find(searchObj || {}, (e, ds) => e ? rej(e) : res(ds));
+    db.devices.find(searchObj || {}, { hits: 0 }, (e, ds) => e ? rej(e) : res(ds));
   });
 
 module.exports.getDevice = mac => new Promise((res, rej) =>

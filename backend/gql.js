@@ -53,6 +53,7 @@ let schema = buildSchema(`
     isSpoof: Boolean
     lastPortscanTime: Date
     beingPortscanned: Boolean
+    hits: String
   }
   type BroStatus {
     version: String
@@ -134,6 +135,7 @@ function devicesToGql(devices) {
 };
 
 function deviceToGql(d) {
+  d.hits && (d.hits = JSON.stringify(d.hits));
   d.beingPortscanned = d.latestIp.ip === spoof.state.portScan.host;
   d.id = d.mac;
   d.ips && (d.ips = Object.values(d.ips));
