@@ -23,7 +23,7 @@ const Style = styled.div`
     border-spacing: 0;
     line-height: 1.1em;
     font-size: 0.9em;
-    margin: 3px 0 12px 0;
+    margin: 3px 0 3px 0;
     th, td {
       text-align: left;
       padding-right: 6px;
@@ -61,27 +61,18 @@ const Device = ({ match: { params: { mac }}}) => (
               this is the gateway device
             </div>}
             <div>
-              <Value small label='first detected' value={device.birthday && moment(device.birthday).calendar()||'(no birthday)'} />
+              <Value 
+                small 
+                label='first detected' 
+                value={device.birthday && moment(device.birthday).calendar()||'(no birthday)'} 
+              />
               <Value small label='vendor' value={device.vendor||'(none detected)'} />
               <Value small label='os' value={device.os||'(none detected)'} />
-              { !device.ports.length && 'no open ports discovered' }
-              { device.ports.length > 0 && 
-                  <div className='ports'>
-                  <b>Open Ports</b>
-                  <table>
-                    <thead><tr><th>port</th><th>service</th><th>seen</th></tr></thead>
-                    <tbody>
-                    {device.ports.map(port => (
-                      <tr key={port.port}>
-                        <td>{port.port}</td>
-                        <td>{port.service}</td>
-                        <td>{moment(port.seen).from(new Date())}</td>
-                      </tr>
-                    ))}
-                    </tbody>                
-                  </table>
-                </div>
-              }
+              <Value 
+                small 
+                label='open ports' 
+                value={!device.ports.length && 'no open ports discovered' || <Ports ports={device.ports} />}
+              />
               <hr/>
               <div>
                 <SpoofControl device={device} type='toggle' />
@@ -104,6 +95,23 @@ const Device = ({ match: { params: { mac }}}) => (
       }}
     </Query>
   </Style>
+);
+
+const Ports = ({ports}) => (
+  <div className='ports'>
+    <table>
+      <thead><tr><th>port</th><th>service</th><th>seen</th></tr></thead>
+      <tbody>
+      {ports.map(port => (
+        <tr key={port.port}>
+          <td>{port.port}</td>
+          <td>{port.service}</td>
+          <td>{moment(port.seen).from(new Date())}</td>
+        </tr>
+      ))}
+      </tbody>                
+    </table>
+  </div>
 );
 
 export default Device;

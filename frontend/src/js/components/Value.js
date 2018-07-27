@@ -24,7 +24,7 @@ const Label = styled.div`
 const Value = p => {
   const {label, value} = p;
   return (<Style {...p}>
-    <Item {...p}>{value}</Item>
+    { (typeof value == 'string') && <Item {...p}>{value}</Item> || value }
     {label&&<Label {...p}>{label}</Label>}
   </Style>);
 }
