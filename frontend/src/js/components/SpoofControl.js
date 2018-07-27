@@ -41,7 +41,11 @@ const SpoofControl = ({
           onChange={x => spoofDevice({ variables: { ip: ip, isSpoof: !isSpoof } })}
         />
       }
-      { data && data.spoofDevice.spoofError && errorContent && errorContent(data.spoofDevice.spoofError) } 
+      { data && 
+        data.spoofDevice.spoofError && 
+        errorContent && 
+        errorContent(data.spoofDevice.spoofError) 
+      } 
     </Style> 
   )}
   </Mutation>

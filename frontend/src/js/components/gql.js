@@ -25,6 +25,8 @@ export const FULL_DEVICE = gql`
     isSensor
     isGateway
     isSpoof
+    beingPortscanned
+    lastPortscanTime
     latestIp { ip seen }
     ips { ip seen }
     ports {
@@ -41,6 +43,7 @@ export const DEVICE = gql`
     device(mac: $mac) {
       ...FullDevice
     }
+    spoofStatus {${SPOOF_STATUS}}
   }
   ${FULL_DEVICE}
 `;
@@ -56,10 +59,12 @@ export const DEVICES = gql`
 export const SCAN = gql`
   mutation scan($ip: String!) {
     scan(ip: $ip) {
+      devices {...FullDevice}
       spoofStatus {${SPOOF_STATUS}}
       scanError
     }
   }
+  ${FULL_DEVICE}
 `;
 
 export const SPOOF_DEVICE = gql`

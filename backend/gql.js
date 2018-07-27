@@ -50,7 +50,8 @@ let schema = buildSchema(`
     isSensor: Boolean
     isGateway: Boolean
     isSpoof: Boolean
-    lastPortscanTime: String
+    lastPortscanTime: Date
+    beingPortscanned: Boolean
   }
   type BroStatus {
     version: String
@@ -74,6 +75,7 @@ let schema = buildSchema(`
     portScan: ScanStatus
   }
   type ScanResult {
+    devices: [Device]
     spoofStatus: SpoofStatus
     scanError: String
   }
@@ -131,6 +133,7 @@ function devicesToGql(devices) {
 };
 
 function deviceToGql(d) {
+  d.beingPortscanned = d.latestIp.ip === spoof.state.portScan.host;
   d.id = d.mac;
   d.ips && (d.ips = Object.values(d.ips));
   d.ports && (d.ports = Object.values(d.ports));
@@ -190,12 +193,15 @@ let root = {
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),
   installBro: install.install,
   login: login,
-  scan: ({ip}) => spoof.scanIp(ip).then((e) => {
-    return {
-      scanError: e,
-      spoofStatus: spoof.state
-    };
-  }),
+  scan: ({ip}) => 
+    Promise.resolve([])
+      .then(a => spoof.scanIp(ip).then(e => a.concat(e)))
+      .then(a => db.getDevices().then(ds => a.concat([devicesToGql(ds)])))
+      .then(([scanError, devices]) => ({
+        scanError: scanError,
+        spoofStatus: spoof.state,
+        devices: devices
+      })),
   deployBro: bro.deploy,
   spoofDevice: ({ip, isSpoof}) => 
     Promise.resolve([])
@@ -205,8 +211,6 @@ let root = {
           spoofError: spoofErr,
           devices: devices
       })),
-
-  Date: () => console.log('Hello world')
 };
 module.exports = expressGraphql({
   schema: schema,

@@ -135,13 +135,13 @@ function portScan(forcedIp) {
         setTimeout(portScan, 0);
       }
       if (isUp) {
-        res();
         state.portScan.scanStart = (new Date()).toISOString();
         state.portScan.host = ip;
         state.portScan.processing = true;
         currentPortScan = new nmap.OsAndPortScan(ip);
         currentPortScan.on('error', addError);
         currentPortScan.on('complete', ds => {
+          state.portScan.host = null;
           state.portScan.processing = false;
           state.portScan.scanTime = currentPortScan.scanTime;
           ds.forEach(d => {
@@ -153,7 +153,8 @@ function portScan(forcedIp) {
           });
           currentPortScan = null;
           setTimeout(portScan, 0); // try to consume queue
-        })
+        });
+        res();
       }
     });
   });

@@ -92,7 +92,6 @@ class DeviceSummary extends Component {
 
 const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
   let ip = p.latestIp.ip;
-  let beingScanned = p.isScanning && p.activeIp === ip;
   return (
     <Grid.Item>
       { state.showPorts && <PortsOverlay ports={p.ports} onHide={hidePorts} /> }
@@ -118,11 +117,12 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
         { <Link to={'/devices/' + p.mac} >{p.mac}</Link> }
       </div>
       <div className='_top'>
-        { beingScanned ? <SlideLabel
-              content={ip}
-              label={'portscanning...'}
-              color='#ff6c00'
-            /> : ip
+        { p.beingPortscanned ? 
+          <SlideLabel
+            content={ip}
+            label={'portscanning...'}
+            color='#ff6c00'
+          /> : ip
         } 
         { p.ports && p.ports.length > 0 && 
           <SlideLabel 
@@ -143,9 +143,23 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
       <div className='_bottom'>
         <Icon name='clock' />
         { moment(p.latestIp.seen).from(new Date()) }
-        <ScanControl {...p} />
-        <SpoofControl device={p} type='button' style={{ float: 'right' }} errorContent={
-          error => <NoticeOverlay content={<span><Icon name='warning' />{ error }</span>} />
+        <ScanControl 
+          {...p} 
+          size='mini'
+          style={{ float: 'right' }}
+          errorContent={error =>
+            <NoticeOverlay content={
+              <span><Icon name='warning' />{ error }</span>
+            }/>
+        }/>
+        <SpoofControl 
+          device={p} 
+          type='button' 
+          style={{ float: 'right' }} 
+          errorContent={error => 
+            <NoticeOverlay content={
+              <span><Icon name='warning' />{ error }</span>
+            }/>
         }/>
       </div>
     </Grid.Item>

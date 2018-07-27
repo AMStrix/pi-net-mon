@@ -4,7 +4,14 @@ import { Button } from 'semantic-ui-react';
 
 import { SCAN, DEVICES } from './gql';
 
-const ScanControl = ({isScanning, latestIp: { ip }}) => (
+const ScanControl = ({
+    size,
+    style, 
+    errorContent, 
+    isScanning, 
+    beingPortscanned,
+    latestIp: { ip }
+  }) => (
   <Mutation 
     mutation={SCAN}
     update={(cache, { data: {scan}}) => {
@@ -17,21 +24,20 @@ const ScanControl = ({isScanning, latestIp: { ip }}) => (
     }}
   > 
   {(scan, {data, loading}) => (
-    <span>
+    <span style={style}>
       <Button 
         content='scan now' 
-        size='mini' 
-        loading={loading}
+        size={size} 
+        loading={loading || beingPortscanned}
         disabled={loading || isScanning}
-        style={{padding: '4px 6px', float: 'right'}}
-        onClick={() => scan({ variables: {ip}})} 
+        style={ size=='mini' && {padding: '4px 6px'} || {}}
+        onClick={() => scan({ variables: {ip} })} 
       />
-      { data && data.scan.scanError && <NoticeOverlay content={
-        <span>
-          <Icon name='warning' />
-          { data.scan.scanError }
-        </span>
-      } />} 
+      { data && 
+        data.scan.scanError && 
+        errorContent && 
+        errorContent(data.scan.scanError)
+      } 
     </span> 
   )}
   </Mutation>
