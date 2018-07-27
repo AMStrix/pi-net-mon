@@ -33,17 +33,17 @@ function fromNow(when) {
 }
 
 const Devices = ({ match: { url }}) => (
-  <Query query={DEVICES} pollInterval={5000}>
-    {({ loading, error, data }) => {
-      if (loading) return "Loading...";
-      if (error) return `Error! ${error.message}`;
-      return (
-        <Switch>
-          <Route path={url + '/:mac'} component={Device} />
-          <Route 
-            path={url} 
-            exact={true} 
-            render={() => (
+  <Switch>
+    <Route path={url + '/:mac'} component={Device} />
+    <Route 
+      path={url} 
+      exact={true} 
+      render={() => (
+        <Query query={DEVICES} pollInterval={5000}>
+          {({ loading, error, data }) => {
+            if (loading) return "Loading...";
+            if (error) return `Error! ${error.message}`;
+            return (
               <Grid>
                 <SpoofStatus {...data.spoofStatus}/>
                 {data.devices.map(d =>
@@ -55,12 +55,12 @@ const Devices = ({ match: { url }}) => (
                   />
                 )}
               </Grid>
-            )} 
-          />
-        </Switch>
-      );
-    }}
-  </Query>
+            );
+          }}
+        </Query>
+      )} 
+    />
+  </Switch>
 );
 
 
