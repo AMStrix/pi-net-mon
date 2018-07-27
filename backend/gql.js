@@ -183,7 +183,7 @@ let root = {
     db.getRemoteHosts(sortField, sortDir, skip, limit)
     .then(hostsToGql),
   activeHosts: ({period}) => {
-    return db.getActiveHosts(new Date(Date.now() - 1000*60*60), new Date())
+    return db.getActiveHosts(new Date(Date.now() - 1000*60*60*24), new Date())
       .then(hostsToGql);
   },
 
