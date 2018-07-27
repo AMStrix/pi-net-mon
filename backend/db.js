@@ -152,7 +152,12 @@ module.exports.updateLocalIp = (d) => {
     (e, reps, up) => {}
   );
 }
-
+function handleNewDevice(d) {
+  if (d.birthday) { return; } // already has birthday
+  db.devices.update({ mac: d.mac }, { $set: { birthday: new Date() } }, (err, r) => {
+    err && (console.log(`handleNewDevice(${d.mac}) error: `, err, JSON.stringify(d)));
+  })
+}
 module.exports.updateDevice = d => new Promise((res, rej) => {
   if (!d.mac) { throw new Error('db.js updateDevice, must have mac! was: ', d); }
   db.devices.findOne({ mac: d.mac }, (e, old) => {
@@ -161,7 +166,8 @@ module.exports.updateDevice = d => new Promise((res, rej) => {
       makeDevice(d, old), 
       { upsert: true }, 
       (e, replacementCount, upserted) => {
-        e ? rej(e) : res()
+        upserted && handleNewDevice(upserted);
+        e ? rej(e) : res();
       }
     );
   })

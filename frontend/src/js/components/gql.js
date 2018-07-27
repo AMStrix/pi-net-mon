@@ -20,6 +20,7 @@ export const FULL_DEVICE = gql`
   fragment FullDevice on Device { 
     id
     mac
+    birthday
     vendor
     os
     isSensor

@@ -43,6 +43,7 @@ let schema = buildSchema(`
     id: String!
     mac: String!
     vendor: String
+    birthday: Date
     os: String
     latestIp: Ip
     ips: [Ip]

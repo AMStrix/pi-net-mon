@@ -61,12 +61,9 @@ const Device = ({ match: { params: { mac }}}) => (
               this is the gateway device
             </div>}
             <div>
+              <Value small label='first detected' value={device.birthday && moment(device.birthday).calendar()||'(no birthday)'} />
               <Value small label='vendor' value={device.vendor||'(none detected)'} />
               <Value small label='os' value={device.os||'(none detected)'} />
-              <div>
-                <SpoofControl device={device} type='toggle' />
-              </div>
-              <hr/>
               { !device.ports.length && 'no open ports discovered' }
               { device.ports.length > 0 && 
                   <div className='ports'>
@@ -85,6 +82,10 @@ const Device = ({ match: { params: { mac }}}) => (
                   </table>
                 </div>
               }
+              <hr/>
+              <div>
+                <SpoofControl device={device} type='toggle' />
+              </div>
               <div className='scanControl'>
                 <ScanControl 
                   size='small'
@@ -94,7 +95,7 @@ const Device = ({ match: { params: { mac }}}) => (
                 { (device.beingPortscanned && 'Scanning...') ||
                   (spoofStatus.portScan.processing &&
                   `Portscan in progress on ${spoofStatus.portScan.host}`) ||
-                  `Last portscan ${moment(device.lastPortscanTime).from(new Date())}`
+                  `Last portscan ${moment(device.lastPortscanTime).calendar()}`
                 }
               </div>
             </div>
