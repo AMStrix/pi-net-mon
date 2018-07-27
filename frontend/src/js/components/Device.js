@@ -19,6 +19,19 @@ const Style = styled.div`
   .info, .scanControl {
     margin-top: 8px;
   }
+  .ports table {
+    border-spacing: 0;
+    line-height: 1.1em;
+    font-size: 0.9em;
+    margin: 3px 0 12px 0;
+    th, td {
+      text-align: left;
+      padding-right: 6px;
+    }
+    th:first-child, td:first-child {
+      text-align: right;
+    }
+  }
 `;
 
 const Device = ({ match: { params: { mac }}}) => (
@@ -32,7 +45,11 @@ const Device = ({ match: { params: { mac }}}) => (
             <div style={{ display: 'flex' }}>
               <Value inline label='mac' value={mac} />
               <Value inline label='ip' value={device.latestIp.ip} />
-              <Seen when={device.latestIp.seen} tip='last time this device was pinged' margin='0 0 0 4px'/>
+              <Seen 
+                when={device.latestIp.seen} 
+                tip='last time this device was pinged/scanned' 
+                margin='0 0 0 4px'
+              />
             </div>
 
             {device.isSensor&&<div className='info'>
@@ -49,6 +66,25 @@ const Device = ({ match: { params: { mac }}}) => (
               <div>
                 <SpoofControl device={device} type='toggle' />
               </div>
+              <hr/>
+              { !device.ports.length && 'no open ports discovered' }
+              { device.ports.length > 0 && 
+                  <div className='ports'>
+                  <b>Open Ports</b>
+                  <table>
+                    <thead><tr><th>port</th><th>service</th><th>seen</th></tr></thead>
+                    <tbody>
+                    {device.ports.map(port => (
+                      <tr key={port.port}>
+                        <td>{port.port}</td>
+                        <td>{port.service}</td>
+                        <td>{moment(port.seen).from(new Date())}</td>
+                      </tr>
+                    ))}
+                    </tbody>                
+                  </table>
+                </div>
+              }
               <div className='scanControl'>
                 <ScanControl 
                   size='small'

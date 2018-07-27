@@ -7,7 +7,7 @@ const Menu = () => (
     <SuiMenu.Item name='dashboard' as={NavLink} to='/' activeClassName='active' exact={true}>
       Dashboard
     </SuiMenu.Item>
-    <SuiMenu.Item name='devices' as={NavLink} to='/devices' activeClassName='active'>
+    <SuiMenu.Item name='devices' as={NavLink} to='/devices' activeClassName='active' exact={true}>
       Devices
     </SuiMenu.Item>
     <SuiMenu.Item name='hosts' as={NavLink} to='/hosts' activeClassName='active'>

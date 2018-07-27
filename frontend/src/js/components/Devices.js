@@ -9,6 +9,7 @@ import moment from 'moment';
 import { SPOOF_STATUS, SPOOF_DEVICE, DEVICES } from './gql';
 import Grid from './Grid';
 import SlideLabel from './SlideLabel';
+import Seen from './Seen';
 import Device from './Device';
 import SpoofControl from './SpoofControl';
 import ScanControl from './ScanControl';
@@ -141,8 +142,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
       </div>
       <hr />
       <div className='_bottom'>
-        <Icon name='clock' />
-        { moment(p.latestIp.seen).from(new Date()) }
+        <Seen when={p.latestIp.seen} tip='last time device was pinged/scanned' />
         <ScanControl 
           {...p} 
           size='mini'
