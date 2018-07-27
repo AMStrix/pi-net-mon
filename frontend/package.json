@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "jest": {
+    "testURL": "http://localhost:8080/"
+  },
   "dependencies": {
     "apollo-client-preset": "^1.0.8",
     "color": "^3.0.0",
@@ -30,6 +33,7 @@
     "file-loader": "^1.1.11",
     "html-loader": "^0.5.5",
     "html-webpack-plugin": "^3.2.0",
+    "jest": "^23.4.1",
     "react": "^16.4.1",
     "react-dom": "^16.4.1",
     "react-svg-loader": "^2.1.0",
@@ -40,7 +44,7 @@
     "webpack-dev-server": "^3.1.4"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --watchAll",
     "start": "webpack-dev-server --open --mode development",
     "build": "webpack"
   },
