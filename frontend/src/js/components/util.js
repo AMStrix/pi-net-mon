@@ -88,7 +88,7 @@ function genDeepKeysByHour(from, to) {
   const keys = _.range(hrCnt).map(h => {
     const d = new Date(from.getTime() + (h * hr));
     return {
-      key: moment(d).format('[y]Y.[m]'+d.getUTCMonth()+'.[d]D.[h]H'),
+      key: `y${d.getUTCFullYear()}.m${d.getUTCMonth()}.d${d.getUTCDate()}.h${d.getUTCHours()}`,
       hr: moment(d).format('ha')
     };
   });
