@@ -28,6 +28,7 @@ export const FULL_DEVICE = gql`
     isSpoof
     beingPortscanned
     lastPortscanTime
+    hits
     latestIp { ip seen }
     ips { ip seen }
     ports {

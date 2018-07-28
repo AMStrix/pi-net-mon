@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "jest": {
-    "testURL": "http://localhost:8080/"
+    "testURL": "http://localhost:8080/",
+    "verbose": true
   },
   "dependencies": {
     "apollo-client-preset": "^1.0.8",

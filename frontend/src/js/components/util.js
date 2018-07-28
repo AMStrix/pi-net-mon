@@ -77,8 +77,85 @@ module.exports.processActiveHostsHourlySums = activeHosts => {
 }
 
 module.exports.isHostNewToday = host => {
-  //console.log(`is ${host.host} with birthday ${host.birthday} new?`);
   return host.birthday ?
     (new Date()).getDate() === (new Date(host.birthday)).getDate() :
     false;
 }
+
+function genDeepKeysByHour(from, to) {
+  const hr = 1000 * 60 * 60;
+  const hrCnt = (to - from) / hr;
+  const keys = _.range(hrCnt).map(h => {
+    const d = new Date(from.getTime() + (h * hr));
+    return {
+      key: moment(d).format('[y]Y.[m]'+d.getUTCMonth()+'.[d]D.[h]H'),
+      hr: moment(d).format('ha')
+    };
+  });
+  return keys;
+};
+module.exports.deviceHostsToActivity24h = hitsString => {
+  const hits = JSON.parse(hitsString);
+  const now = new Date();
+  now.setUTCHours(now.getUTCHours() + 1); // include full hour
+  const yesterday = new Date(Date.now() - 1000*60*60*23);
+  const keys = genDeepKeysByHour(yesterday, now);
+  const sums = keys.reduce((a, ko) => {
+    if (_.get(hits, ko.key)) {
+      a.push({
+        ts: ko.hr,
+        sum: _.values(_.get(hits, ko.key)).reduce((a,x) => a+x, 0),
+        h: _.get(hits, ko.key)
+      });
+    } else {
+      a.push({ ts: ko.hr, sum: 0, h: {} }); // no activity
+    }
+    return a;
+  }, []);
+  const topHostsMap = sums.reduce((a, s) => {
+    _.keys(s.h).forEach(k => a[k] ? a[k] += s.h[k] : a[k] = s.h[k]);
+    return a;
+  }, {});
+  let topHostsArr = _.keys(topHostsMap)
+    .map(k => ({ h: k, v: topHostsMap[k] }))
+    .sort((a, b) => b.v - a.v);
+  const otherHostsArr = _.drop(topHostsArr, 5);
+  topHostsArr = _.take(topHostsArr, 5);
+  const keepHosts = topHostsArr.reduce((a, x) => (a[x.h] = true) && a, {});
+  //const sumOtherHosts = otherHostsArr.reduce((a, x) => (a[x] = true) && a, {});
+  _.forIn(sums, (v, k) => {
+    const rem = [];
+    let othersSum = 0;
+    _.forIn(v.h, (hits, host) => {
+      if (!keepHosts[host]) {
+        othersSum += hits;
+        rem.push(host);
+      }
+    });
+    rem.forEach(r => delete v.h[r]);
+    v.otherSum = othersSum;
+  });
+  // fill in missing top hosts (when they have 0 hits) so chart can render
+  sums.forEach(s => topHostsArr.forEach(th => {
+    if (!s.h[th.h]) {
+      s.h[th.h] = 0;
+    }
+  }));
+  const totalOtherSum = sums.reduce((tot, s) => s.otherSum + tot, 0);
+  return { data: sums, topHosts: topHostsArr, totalOtherSum: totalOtherSum };
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -2,10 +2,11 @@ import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import { graphql, Query, Mutation } from 'react-apollo';
 import gql from 'graphql-tag';
-import { Icon, Checkbox } from 'semantic-ui-react'
+import { Icon, Checkbox } from 'semantic-ui-react';
 import styled from 'styled-components';
 import moment from 'moment';
 
+import { deviceHostsToActivity24h } from './util';
 import { orange } from '../colors';
 import { DEVICE } from './gql';
 import Grid from './Grid';
@@ -13,6 +14,7 @@ import Value from './Value';
 import Seen from './Seen';
 import SpoofControl from './SpoofControl';
 import ScanControl from './ScanControl';
+import DeviceHostChart from './DeviceHostChart';
 
 const Style = styled.div`
   margin: 8px 8px 0 8px;
@@ -73,7 +75,9 @@ const Device = ({ match: { params: { mac }}}) => (
                 label='open ports' 
                 value={!device.ports.length && 'no open ports discovered' || <Ports ports={device.ports} />}
               />
+              <DeviceHostChart hits={deviceHostsToActivity24h(device.hits)} />
               <hr/>
+              
               <div>
                 <SpoofControl device={device} type='toggle' />
               </div>
