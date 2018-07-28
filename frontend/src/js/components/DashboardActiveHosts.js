@@ -9,17 +9,20 @@ import moment from 'moment';
 import styled from 'styled-components';
 
 import { ACTIVE_HOSTS } from './gql';
-import { orange } from '../colors';
+import { orange, grayText } from '../colors';
 import { processActiveHostHitSums } from './util';
 import Grid from './Grid';
 
 const Style = styled.div`
-  ._hostWrap {
+  .hostWrap {
     position: relative;
     white-space: nowrap;
     margin-bottom: 1px;
     margin-right: 0.5em;
     line-height: 1rem;
+    &.loading {
+      background: ${grayText.lighten(0.7)};
+    }
     & > span {
       position: relative;
       text-shadow: 0.5px 0.5px 1px white;
@@ -35,13 +38,7 @@ const Style = styled.div`
         ${orange} 100%);
     }
   }
-  ._host {
-    font-weight: bold;
-    width: 50%;
-    display: inline-block;
-    padding-left: 0.5em;
-  }
-  ._scroll {
+  .scroll {
     max-height: 400px;
     overflow-y: auto;
     margin-right: -8px; // todo: smarten
@@ -57,7 +54,7 @@ const DashboardActiveHosts = () => (
       pollInterval={30000}
     >
       {({ loading, error, data: {activeHosts} }) => {
-        if (loading) return "Loading...";
+        if (loading) return <Loading n={30} />;
         if (error) return `Error! ${error.message}`;
         const hosts = processActiveHostHitSums(activeHosts);
         const gw = hc => ((hc / hosts.max) * 100) + '%';
@@ -65,10 +62,10 @@ const DashboardActiveHosts = () => (
           <Style>
             <div>Active Hosts Today ({hosts.count})</div>
             <hr />
-            <div className='_middle _scroll'>
+            <div className='_middle scroll'>
               { !hosts.hosts.length && 'no active hosts' }
               { hosts.hosts.map(h => (
-                <div className='_hostWrap' key={h.host}>
+                <div className='hostWrap' key={h.host}>
                   <div style={{ width: gw(h.hitCount) }}>&nbsp;</div>
                   <span>{h.host} ({h.hitCount})</span>
                 </div>
@@ -79,6 +76,20 @@ const DashboardActiveHosts = () => (
       }}
     </Query>
   </Grid.Item>
+);
+
+const Loading = ({n}) => (
+  <Style>
+    <div>Active Hosts Today (loading...)</div>
+    <hr />
+    <div className='_middle scroll'>
+      {_.range(n).map(i => (
+        <div className='hostWrap loading' key={i}>
+          <span>&nbsp;</span>
+        </div>
+      ))}
+    </div>
+  </Style>
 );
 
 export default DashboardActiveHosts;

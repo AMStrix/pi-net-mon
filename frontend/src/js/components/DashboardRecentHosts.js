@@ -8,34 +8,41 @@ import moment from 'moment';
 import styled from 'styled-components';
 
 import { REMOTE_HOSTS } from './gql';
-import { lightBlue } from '../colors';
+import { lightBlue, grayText } from '../colors';
 import { isHostNewToday } from './util';
 import Grid from './Grid';
 
 const Style = styled.div`
-  ._hostWrap {
+  .hostWrap {
     white-space: nowrap;
     margin-bottom: 4px;
     line-height: 1.1rem;
+    &.loading {
+      background: ${grayText.lighten(0.7)};
+    }
   }
-  ._host {
+  .host {
     font-weight: bold;
   }
-  ._newHost {
+  .newHost {
     font-weight: bold;
     background: ${lightBlue};
     display: inline-block;
     border-radius: 0.5em;
     padding: 0 0.5em;
   }
-  & a, & ._when {
+  .legend {
+    float: right;
+    font-size: 0.8em;
+  }
+  & a, & .when {
     font-size: 0.9em;
   }
-  ._when {
+  .when {
     color: gray;
     padding-left: 6px;
   }
-  ._scroll {
+  .scroll {
     max-height: 400px;
     overflow-y: auto;
     margin-right: -8px; // todo: make Grid.Scrollable or sth.
@@ -51,25 +58,24 @@ const DashboardRemoteHosts = () => (
       pollInterval={30000}
     >
       {({ loading, error, data: {remoteHosts} }) => {
-        if (loading) return "Loading...";
+        if (loading) return <Loading n={12} />;
         if (error) return `Error! ${error.message}`;
-
         return (
           <Style>
             <div>
               Recent Hosts
-              <div className='_newHost' style={{ float: 'right', fontSize: '0.8em' }}>new today</div>
+              <div className='legend newHost'>new today</div>
             </div>
             <hr />
-            <div className='_middle _scroll'>
+            <div className='_middle scroll'>
               { remoteHosts.map(h => (
-                <div className='_hostWrap' key={h.host}>
-                  <div className={isHostNewToday(h)?'_newHost':'_host'}>
+                <div className='hostWrap' key={h.host}>
+                  <div className={isHostNewToday(h)?'newHost':'host'}>
                     {h.host}
                   </div>
                   <div>
                     <Link to={'/devices/'+h.latestMac} >{h.latestMac}</Link>
-                    <span className='_when'>
+                    <span className='when'>
                       {moment(h.latestHit).from(new Date())}
                     </span>
                   </div>
@@ -81,6 +87,23 @@ const DashboardRemoteHosts = () => (
       }}
     </Query>
   </Grid.Item>
+);
+
+const Loading = ({n}) => (
+  <Style>
+    <div>
+      Recent Hosts (loading...)
+    </div>
+    <hr />
+    <div className='_middle scroll'>
+      { _.range(n).map(i => (
+        <div className='hostWrap loading' key={i}>
+          <div className='host'>&nbsp;</div>
+          <div><span className='when'>&nbsp;</span></div>
+        </div>
+      ))}
+    </div>
+  </Style>
 );
 
 export default DashboardRemoteHosts;
