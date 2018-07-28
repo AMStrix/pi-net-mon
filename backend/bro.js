@@ -87,6 +87,7 @@ const broHandlers = {
 
   },
   dns: d => {
+    // TODO: look into filtering "rcode_name":"NXDOMAIN"
     d = JSON.parse(d);
     if (d.uid === lastDnsUid) { return; } // 2 ident. dns entries coming on the log
     lastDnsUid = d.uid;

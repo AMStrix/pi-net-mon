@@ -86,7 +86,7 @@ function makeDevice(d, old) {
 }
 
 function makeHostUpdate(raw) {
-  if (!raw.host) { throw new Error('makeHostUpdate(raw) req host, was: ' + raw); }
+  if (!raw.host) { throw new Error('makeHostUpdate(raw) req host, was: ' + JSON.stringify(raw, null, 2)); }
   const $set = (a, b, n, op, p) => b[n] && (_.set(a, `${op&&op+'.'||''}${n}${p&&'s'||''}`, b[n]));
   const out = {};
   $set(out, raw, 'latestHit', '$set');
