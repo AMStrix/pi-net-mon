@@ -42,6 +42,7 @@ let schema = buildSchema(`
   type Device {
     id: String!
     mac: String!
+    name: String
     vendor: String
     birthday: Date
     os: String
@@ -85,6 +86,10 @@ let schema = buildSchema(`
     devices: [Device]
     spoofError: String
   }
+  type DeviceResult {
+    device: Device,
+    error: String
+  }
   type RemoteHost {
     id: String!
     host: String!
@@ -117,7 +122,8 @@ let schema = buildSchema(`
     login(user: String!, pass: String!): Status
     scan(ip: String!): ScanResult
     spoofDevice(ip: String!, isSpoof: Boolean): SpoofResult
-    deployBro: BroStatus
+    deployBro: BroStatus,
+    nameDevice(mac: String!, name: String!): DeviceResult
   }
 
 `);
@@ -214,6 +220,11 @@ let root = {
           spoofError: spoofErr,
           devices: devices
       })),
+  nameDevice: ({mac, name}) =>
+    db.nameDevice(mac, name)
+      .then(deviceToGql)
+      .then(d => ({ device: d }))
+      .catch(e => ({ error: e })),
 };
 module.exports = expressGraphql({
   schema: schema,

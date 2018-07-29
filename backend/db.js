@@ -173,11 +173,19 @@ module.exports.updateDevice = d => new Promise((res, rej) => {
   })
 });
 
+module.exports.nameDevice = (mac, name) => new Promise((res, rej) => {
+  if (name.length > 35) { rej('name should be less than 35 chars'); }
+  db.devices.update({ mac: mac }, { $set: { name: name } }, { returnUpdatedDocs: true }, (e, n, d) => {
+    e && console.log('nameDevice error', e, JSON.stringify(ds ,null, 2));
+    res(d);
+  });
+});
+
 module.exports.updateDeviceHostHit = d => new Promise((res, rej) => {
   if (!d.mac) { throw new Error('updateDeviceHostHit expected a mac, doc was ',d); }
   const update = f.makeDeviceHostHitUpdate(d.host, d.latestHit);
   db.devices.update({ mac: d.mac }, update, {}, (e, n) => {
-    e && console.log('updateDeviceHostHit error', e, JSON.stringify(d,null,2));
+    e && console.log('updateDeviceHostHit error', e, JSON.stringify(d, null, 2));
     res();
   });
 });
