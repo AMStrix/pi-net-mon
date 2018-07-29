@@ -96,6 +96,7 @@ let schema = buildSchema(`
     birthday: Date
     latestHit: Date
     latestMac: String
+    latestDeviceName: String
     assocHost: [String]
     sources: [String]
     protocols: [String]

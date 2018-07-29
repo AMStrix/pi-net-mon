@@ -57,7 +57,7 @@ const DashboardRemoteHosts = () => (
       variables={{ sortField: 'latestHit', sortDir: -1, skip: 0, limit: 200 }} 
       pollInterval={30000}
     >
-      {({ loading, error, data: {remoteHosts} }) => {
+      {({loading, error, data: { remoteHosts } }) => {
         if (loading) return <Loading n={12} />;
         if (error) return `Error! ${error.message}`;
         return (
@@ -74,7 +74,7 @@ const DashboardRemoteHosts = () => (
                     {h.host}
                   </div>
                   <div>
-                    <Link to={'/devices/'+h.latestMac} >{h.latestMac}</Link>
+                    <Link to={'/devices/'+h.latestMac} >{h.latestDeviceName||h.latestMac}</Link>
                     <span className='when'>
                       {moment(h.latestHit).from(new Date())}
                     </span>

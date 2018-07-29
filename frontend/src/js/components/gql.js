@@ -98,6 +98,7 @@ export const REMOTE_HOSTS = gql`
       birthday
       latestHit
       latestMac
+      latestDeviceName
       assocHost
       sources
       protocols

@@ -213,6 +213,14 @@ module.exports.ipToMac = f.memoizePeriodic(ip => new Promise((res, rej) =>
   })
 ));
 
+const macToName = module.exports.macToName = f.memoizePeriodic(mac => new Promise((res, rej) => 
+  db.devices.findOne({ 'mac': mac }, { name: 1 }, (err, d) => {
+    err && (console.log(`macToName(${mac}) error: `, err));
+    d ? res(d.name) : res();
+    //console.log('macToName ', mac, d.name);
+  })
+));
+
 module.exports.getDevices = (searchObj) => 
   new Promise((res, rej) => {
     db.devices.find(searchObj || {}, { hits: 0 }, (e, ds) => e ? rej(e) : res(ds));
@@ -259,7 +267,9 @@ module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise
     .limit(limit||30)
     .exec((e, ds) => {
       e && console.log('getRemoteHosts() error', e);
-      res(ds);
+      Promise.all(ds.map(d => 
+        macToName(d.latestMac).then(n => _.set(d, 'latestDeviceName', n))
+      )).then(res);
     })
 });
 
