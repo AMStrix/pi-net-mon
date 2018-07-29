@@ -38,7 +38,7 @@ const Style = styled.div`
 const hostKeyToDisp = h => h.replace('host', '').replace(/_/g, '.');
 
 const DeviceHostChart = p => (
-  (p.hits.totalOtherSum === 0 && _.values(p.topHosts).reduce((a,x)=>x+a,0) === 0) &&
+  (p.hits.totalOtherSum === 0 && _.values(p.hits.topHosts).reduce((a,x)=>x+a,0) === 0) &&
   <Value small label='host activity' value='no host activity in last 24h' /> ||
   <Style>
     <ResponsiveContainer height={150}>
