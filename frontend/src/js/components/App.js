@@ -23,7 +23,6 @@ const MenuWrapper = styled.div`
   overflow-x: hidden;
 `;
 const ContentWrapper = styled.div`
-  background: ${c.background};
   display: flex;
   flex: 1;
   padding-left: 200px;

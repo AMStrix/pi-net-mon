@@ -2,24 +2,40 @@ import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import { graphql, Query, Mutation } from 'react-apollo';
 import gql from 'graphql-tag';
-import { Icon, Checkbox } from 'semantic-ui-react';
+import { Icon, Checkbox, Popup } from 'semantic-ui-react';
 import styled from 'styled-components';
 import moment from 'moment';
 
 import { deviceHostsToActivity24h } from './util';
-import { orange } from '../colors';
+import { orange, grayText } from '../colors';
 import { DEVICE } from './gql';
 import Grid from './Grid';
 import Value from './Value';
 import Seen from './Seen';
+import NameDeviceControl from './NameDeviceControl';
 import SpoofControl from './SpoofControl';
 import ScanControl from './ScanControl';
 import DeviceHostChart from './DeviceHostChart';
 
 const Style = styled.div`
   margin: 8px 8px 0 8px;
-  .info, .scanControl {
-    margin-top: 8px;
+  .deviceName {
+    display: inline-block;
+    margin: 0 0 10px 0;
+    font-size: 1.6em;
+    cursor: pointer;
+    & .unset {
+      color: ${grayText};
+    }
+    .icon {
+      font-size: 0.55em;
+      margin: 0 0.3em;
+      vertical-align: top;
+    }
+  }
+  .extra, .scanControl {
+    margin: 8px 12px 8px 0;
+    display: inline-block;
   }
   .ports table {
     border-spacing: 0;
@@ -36,6 +52,8 @@ const Style = styled.div`
   }
 `;
 
+let deviceNameTrigger = null;
+
 const Device = ({ match: { params: { mac }}}) => (
   <Style>
     <Query query={DEVICE} variables={{ mac: mac }}>
@@ -44,6 +62,26 @@ const Device = ({ match: { params: { mac }}}) => (
         if (error) return `Error! ${error.message}`;
         return (
           <div>
+
+
+                <Popup
+                  trigger={
+                    <div className='deviceName' ref={x => deviceNameTrigger = x}>
+                      {device.name || <span className='unset'>(unnamed)</span>}
+                      <a href='#' onClick={e=>e.preventDefault()}>
+                        <Icon name='edit'/>
+                      </a>
+                    </div>
+                  }
+                  content={<NameDeviceControl onSuccess={() => 
+                    // close popup
+                    setTimeout(()=>deviceNameTrigger.click(),0)
+                  } 
+                  focus={true} {...device} />}
+                  on='click'
+                />
+
+
             <div style={{ display: 'flex' }}>
               <Value inline label='mac' value={mac} />
               <Value inline label='ip' value={device.latestIp.ip} />
@@ -54,14 +92,16 @@ const Device = ({ match: { params: { mac }}}) => (
               />
             </div>
 
-            {device.isSensor&&<div className='info'>
+            {device.isSensor&&<div className='extra'>
               <Icon name='info circle' style={{ color: orange() }}/>
               this is the pi-net-mon device
             </div>}
-            {device.isGateway&&<div className='info'>
+
+            {device.isGateway&&<div className='extra'>
               <Icon name='info circle' style={{ color: orange() }}/>
               this is the gateway device
             </div>}
+
             <div>
               <Value 
                 small 
@@ -75,7 +115,9 @@ const Device = ({ match: { params: { mac }}}) => (
                 label='open ports' 
                 value={!device.ports.length && 'no open ports discovered' || <Ports ports={device.ports} />}
               />
+
               <DeviceHostChart hits={deviceHostsToActivity24h(device.hits)} />
+
               <hr/>
               
               <div>

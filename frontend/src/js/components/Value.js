@@ -11,8 +11,16 @@ const Style = styled.div`
 `;
 
 const Item = styled.div`
-  font-size: ${p => hop(p, 'small', '1em', '1.4em')};
-  font-weight: ${p => hop(p, 'small', 'normal', 'bold')};
+  ${p => p.hasOwnProperty('small') &&`
+    font-size: 1em;
+    font-weight: normal;
+  ` || p.hasOwnProperty('large') &&`
+    font-size: 1.6em;
+    font-weight: bold;
+  ` || `
+    font-size: 1.4em;
+    font-weight: bold;
+  `}
 `;
 
 const Label = styled.div`
