@@ -174,7 +174,8 @@ module.exports.updateDevice = d => new Promise((res, rej) => {
 });
 
 module.exports.nameDevice = (mac, name) => new Promise((res, rej) => {
-  if (name.length > 35) { rej('name should be less than 35 chars'); }
+  if (name.length === 0) { rej('please enter a name'); return; }
+  if (name.length > 35) { rej('name should be less than 35 chars'); return; }
   db.devices.update({ mac: mac }, { $set: { name: name } }, { returnUpdatedDocs: true }, (e, n, d) => {
     e && console.log('nameDevice error', e, JSON.stringify(ds ,null, 2));
     res(d);
