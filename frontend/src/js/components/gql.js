@@ -28,7 +28,6 @@ export const FULL_DEVICE = gql`
     isSpoof
     beingPortscanned
     lastPortscanTime
-    hits
     latestIp { ip seen }
     ips { ip seen }
     ports {
@@ -43,6 +42,7 @@ export const FULL_DEVICE = gql`
 export const DEVICE = gql`
   query device($mac: String!) {
     device(mac: $mac) {
+      hits
       ...FullDevice
     }
     spoofStatus {${SPOOF_STATUS}}
@@ -125,6 +125,16 @@ export const BRO_STATUS = gql`
       errors
     }
   }
+`;
+
+export const NAME_DEVICE = gql`
+  mutation nameDevice($mac: String!, $name: String!){
+    nameDevice(mac: $mac, name: $name) {
+      device { ...FullDevice }
+      error
+    }
+  }
+  ${FULL_DEVICE}
 `;
 
 
