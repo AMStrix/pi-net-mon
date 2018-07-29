@@ -63,24 +63,22 @@ const Device = ({ match: { params: { mac }}}) => (
         return (
           <div>
 
-
-                <Popup
-                  trigger={
-                    <div className='deviceName' ref={x => deviceNameTrigger = x}>
-                      {device.name || <span className='unset'>(unnamed)</span>}
-                      <a href='#' onClick={e=>e.preventDefault()}>
-                        <Icon name='edit'/>
-                      </a>
-                    </div>
-                  }
-                  content={<NameDeviceControl onSuccess={() => 
-                    // close popup
-                    setTimeout(()=>deviceNameTrigger.click(),0)
-                  } 
-                  focus={true} {...device} />}
-                  on='click'
-                />
-
+            <Popup
+              trigger={
+                <div className='deviceName' ref={x => deviceNameTrigger = x}>
+                  {device.name || <span className='unset'>(unnamed)</span>}
+                  <a href='#' onClick={e=>e.preventDefault()}>
+                    <Icon name='edit'/>
+                  </a>
+                </div>
+              }
+              content={<NameDeviceControl onSuccess={() => 
+                // close popup
+                setTimeout(()=>deviceNameTrigger.click(),0)
+              } 
+              focus={true} {...device} />}
+              on='click'
+            />
 
             <div style={{ display: 'flex' }}>
               <Value inline label='mac' value={mac} />
@@ -103,6 +101,7 @@ const Device = ({ match: { params: { mac }}}) => (
             </div>}
 
             <div>
+            
               <Value 
                 small 
                 label='first detected' 
