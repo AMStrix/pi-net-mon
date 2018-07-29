@@ -54,15 +54,21 @@ const broHandlers = {
   http: d => {
     d = JSON.parse(d);
     l.info(`bro http > ${d['id.orig_h']} ${d.method} ${d.host} ${d['id.resp_h']} ${d.uri}`);
+    const hitTime = new Date(d.ts * 1000);
     db.ipToMac(d['id.orig_h']).then(mac => 
       db.updateRemoteHostHit({
         host: d.host,
-        latestHit: new Date(d.ts*1000),
+        latestHit: hitTime,
         latestMac: mac,
         assocHost: d['id.resp_h'],
         source: 'http',
         protocol: null,
         service: 'http',
+        mac: mac
+      }) &&
+      db.updateDeviceHostHit({
+        host: d.host,
+        latestHit: hitTime,
         mac: mac
       })
     )
@@ -70,15 +76,21 @@ const broHandlers = {
   ssl: d => {
     d = JSON.parse(d);
     l.info(`bro ssl > ${d['id.orig_h']} ${d.version} ${d.server_name} ${d['id.resp_h']}`);
+    const hitTime = new Date(d.ts * 1000);
     db.ipToMac(d['id.orig_h']).then(mac => 
       db.updateRemoteHostHit({
         host: d.server_name || d['id.resp_h'],
-        latestHit: new Date(d.ts*1000),
+        latestHit: hitTime,
         latestMac: mac,
         assocHost: d.server_name ? d['id.resp_h'] : null,
         source: 'ssl',
         protocol: null,
         service: 'ssl',
+        mac: mac
+      }) &&
+      db.updateDeviceHostHit({
+        host: d.server_name || d['id.resp_h'],
+        latestHit: hitTime,
         mac: mac
       })
     )
