@@ -115,7 +115,7 @@ const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
             content={p.isSpoof ? 'arp spoofing on' : 'arp spoofing off, not monitoring traffic'}
           />
         }
-        { <Link to={'/devices/' + p.mac} >{p.mac}</Link> }
+        { <Link to={'/devices/' + p.mac} >{p.name||p.mac}</Link> }
       </div>
       <div className='_top'>
         { p.beingPortscanned ? 
