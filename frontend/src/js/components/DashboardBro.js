@@ -22,7 +22,7 @@ const DashboardBro = () => (
               status: {broStatus.status} <br/>
               deployed: {broStatus.isDeployed ? 'yes' : 'no'} <br/>
               errors: {broStatus.errors.length} <br/>
-              {!broStatus.isDeployed && <Deploy />}
+              {(!broStatus.isDeployed || broStatus.status == 'crashed') && <Deploy />}
             </div>
 
           </div>
