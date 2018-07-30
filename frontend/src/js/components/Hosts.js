@@ -91,7 +91,7 @@ const Maxima = (p) => {
 
 const ActivityChart = ({data}) =>(
   <ResponsiveContainer height={150}>
-    <AreaChart data={data} margin={{ left: 0, top: 0, right: 0, bottom: 0 }}>
+    <AreaChart data={data} margin={{ left: 0, top: 5, right: 0, bottom: 0 }}>
       <defs>
         <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
           <stop offset="10%" stopColor={orange()} stopOpacity={0.8}/>
