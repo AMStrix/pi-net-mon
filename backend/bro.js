@@ -74,17 +74,17 @@ const broHandlers = {
     const hitTime = new Date(d.ts * 1000);
     db.ipToMac(d['id.orig_h']).then(mac => 
       db.updateRemoteHostHit({
-        host: d.host,
+        host: d.host || d['id.resp_h'],
         latestHit: hitTime,
         latestMac: mac,
-        assocHost: d['id.resp_h'],
+        assocHost: d.host ? d['id.resp_h'] : null,
         source: 'http',
         protocol: null,
         service: 'http',
         mac: mac
       }) &&
       db.updateDeviceHostHit({
-        host: d.host,
+        host: d.host || d['id.resp_h'],
         latestHit: hitTime,
         mac: mac
       })
