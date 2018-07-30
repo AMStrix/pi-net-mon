@@ -192,8 +192,8 @@ function arpSpoof(ip) {
   let args = ['-i', 'eth0', '-t', ip, '-r', thisGateway()];
   let child = childProcess.spawn('arpspoof', args);
   spoofing[ip] = child;
-  child.stdout.on('data', d => l.verbose(d));
-  child.stderr.on('data', e => l.verbose(e));
+  child.stdout.on('data', d => l.debug(d));
+  child.stderr.on('data', e => l.debug(e));
   child.on('close', x => {
     l.info(`CLOSE arpspoof ${ip} with code: ${x}`);
     spoofing[ip] = null; // clear the child after close

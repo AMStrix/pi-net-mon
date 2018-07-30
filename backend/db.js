@@ -8,10 +8,20 @@ const f = require('./f');
 
 const DBS = ['users', 'localIps', 'devices', 'remoteHosts'];
 
+const dbOnload = (name, e) => {
+  if (!e) {
+    l.info(`db.js loaded ${name}.db success`);
+  } else {
+    l.error(`db.js problem loading ${name}.db : ${'\n'+e.stack}`);
+    throw e;
+  }
+};
+
 const makeDb = name => 
   new Nedb({
     filename: `./data/${name}.db`,
-    autoload: true
+    autoload: true,
+    onload: e => dbOnload(name, e)
   });
 
 const db = DBS.reduce((a, n) => (a[n] = makeDb(n)) && a, {});
@@ -23,11 +33,14 @@ const INDEXES = {
   remoteHosts: 'host'
 };
 
-Object.keys(INDEXES).forEach(dbn => 
-  db[dbn].ensureIndex({ fieldName: INDEXES[dbn], unique: true },
-    e => e && console.log(e)
-  )
-);
+Object.keys(INDEXES).forEach(dbn => {
+  db[dbn].ensureIndex(
+    { fieldName: INDEXES[dbn], unique: true },
+    e => e && l.error(`db.js problem indexing ${dbn}.db : ${'\n'+e.stack}`)
+  );
+  db[dbn].persistence.setAutocompactionInterval(1000*60*30);
+  db[dbn].on('compaction.done', () =>  l.info(`db.js ${dbn} compaction done`));
+});
 
 db.remoteHosts.ensureIndex({ fieldName: 'latestHit' }, 
     e => e && console.log(e));
@@ -221,9 +234,11 @@ const macToName = module.exports.macToName = f.memoizePeriodic(mac => new Promis
   })
 ));
 
-module.exports.getDevices = (searchObj) => 
+module.exports.getDevices = (searchObj) =>
   new Promise((res, rej) => {
-    db.devices.find(searchObj || {}, { hits: 0 }, (e, ds) => e ? rej(e) : res(ds));
+    db.devices.find(searchObj || {}, { hits: 0 }, (e, ds) => {
+      e ? rej(e) : res(ds);
+    });
   });
 
 module.exports.getDevice = mac => new Promise((res, rej) =>
