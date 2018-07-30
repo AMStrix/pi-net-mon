@@ -2,7 +2,7 @@ const childProcess = require('child_process');
 const _ = require('lodash');
 const l = require('./log');
 
-module.exports.cli = (cmd, args) => new Promise((res, rej) => {
+const cli = module.exports.cli = (cmd, args) => new Promise((res, rej) => {
   l.verbose(`f.js cli(${cmd}, ${JSON.stringify(args)})`);
   let out = '';
   const child = childProcess.spawn(cmd, args);
@@ -15,8 +15,22 @@ module.exports.cli = (cmd, args) => new Promise((res, rej) => {
   child.on('error', e => {
     l.error(`f.js cli(${cmd}, ${JSON.stringify(args)}) error ${e.stack}`)
     rej({ out: out, error: e });
-  })
+  });
 });
+
+const cliSync = module.exports.cliSync = (cmd, args) => {
+  l.verbose(`f.js cliSync(${cmd}, ${JSON.stringify(args)})`);
+  const child = childProcess.spawnSync(cmd, args);
+  if (child.error) {
+    l.error(`f.js cli(${cmd}, ${JSON.stringify(args)}) error ${e.stack}`);
+  }
+  if (child.stdout) {
+    const out = child.stdout.toString();
+    l.verbose(`f.js cli(${cmd}, ${JSON.stringify(args)}) out: ${'\n'+out}`);
+    return out;
+  }
+  return null;
+};
 
 module.exports.memoizePeriodic = (fn, stale) => {
   const defaultStale = 1000 * 60 * 60;

@@ -1,5 +1,4 @@
 const childProcess = require('child_process');
-const sh = require('shelljs');
 const nmap = require('./node-nmap');
 
 const l = require('./log');
@@ -40,25 +39,25 @@ function addError(e) {
 }
 
 const thisMac = f.memoizePeriodic(() => {
-  let ifconfig = sh.exec("ifconfig eth0", {silent:true}).stdout;
+  let ifconfig = f.cliSync('ifconfig', ['eth0']);
   let macSearch = /ether\s((\w{2}:){5}\w{2})/.exec(ifconfig);
   return macSearch.length === 3 ? macSearch[1].toUpperCase() : null;
 });
 
 const thisIp = f.memoizePeriodic(() => {
-  let ifconfig = sh.exec("ifconfig eth0", {silent:true}).stdout;
+  let ifconfig = f.cliSync('ifconfig', ['eth0']);
   let ipSearch = /inet\s([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/.exec(ifconfig);
   return ipSearch.length === 2 ? ipSearch[1] : null;
 });
 
 const localRange = f.memoizePeriodic(() => {
-  let iproute = sh.exec('ip route', {silent:true}).stdout;
+  let iproute = f.cliSync('ip', ['route']);
   let search = /[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\/[0-9]+/.exec(iproute);
   return search.length === 1 ? search[0] : null;
 });
 
 const thisGateway = f.memoizePeriodic(() => {
-  let iproute = sh.exec('ip route', {silent:true}).stdout;
+  let iproute = f.cliSync('ip', ['route']);
   let gwSearch = /default\svia\s([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/.exec(iproute);
   return gwSearch.length === 2 ? gwSearch[1] : null;
 });
@@ -162,10 +161,7 @@ function portScan(forcedIp) {
 
 
 function spoofInit() {
-  let fwdOn = sh.exec(
-    "echo 1 > /proc/sys/net/ipv4/ip_forward ", 
-    { silent: true }
-  ).stdout;
+  f.cliSync('echo', ['1','>','/proc/sys/net/ipv4/ip_forward'])
   if (process.getuid() !== 0) {
     throw new Error('spoofInit: Must be run as root!');
   }
