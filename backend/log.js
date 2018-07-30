@@ -18,7 +18,7 @@ const log = winston.createLogger({
 
 if (!isProduction) {
   log.add(new winston.transports.Console({
-    level: 'info'
+    level: 'verbose'
   }));
 }
 

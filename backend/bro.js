@@ -1,6 +1,5 @@
 const fs = require('fs');
 const util = require('util');
-const sh = require('shelljs');
 const Tail = require('tail').Tail;
 const readdir = util.promisify(fs.readdir);
 
@@ -8,7 +7,7 @@ const l = require('./log');
 const f = require('./f');
 const db = require('./db');
 
-const BROBIN = 'sudo /opt/nsm/bro/bin/broctl';
+const BROBIN = '/opt/nsm/bro/bin/broctl';
 
 const state = {
   version: null,
@@ -24,29 +23,47 @@ function init() {
 }
 
 function addError(e) {
-  l.info('ERROR bro.js', e);
+  l.error('bro.js', e);
   state.errors.push(e.toString());
   return true;
 }
 
-const cmdVersion = f.memoizePeriodic(() => new Promise((res, rej) => {
-  let out = sh.exec(BROBIN + ' --version', { silent: true }).stdout;
-  res(out);
-}));
+const cmdVersion = f.memoizePeriodic(() => 
+  f.cli(BROBIN, ['--version']).catch(e => 'bro.js cmdVersion() error: ' + e.message)
+);
 
-const cmdStatus = f.memoizePeriodic(() => new Promise((res, rej) => {
-  let out = sh.exec(BROBIN + ' status', { silent: true }).stdout;
-  let search = /bro\s+standalone\s+localhost\s+(\w+)/.exec(out);
-  res(search.length === 2 ? search[1] : null);
-}), 1000*60*5);
+const cmdStatus = f.memoizePeriodic(() => {
+  const parse = (lines) => {
+    const search = /bro\s+standalone\s+localhost\s+(\w+)/.exec(lines);
+    return search.length === 2 ? search[1] : null;
+  }
+  return f.cli(BROBIN, ['status'])
+    .then(parse)
+    .catch(obj => {
+      if (obj.error) {
+        return 'bro.js cmdStatus() error: ' + e.message;
+      } else if (obj.code == 1) { // crashed
+        return parse(obj.out);
+      }
+      return `bro.js cmdStatus() exit code ${obj.code} output: ${obj.out}`;
+    })
+}, 1000*60*5);
 
 const cmdDeploy = () => {
   if (deploying) { return false; }
   deploying = true;
-  let out = sh.exec(BROBIN + ' deploy', { silent: false });
-  deploying = false;
-  cmdStatus.clear();
-  return true;
+  return f.cli(BROBIN, ['deploy'])
+    .then(out => {
+      l.info(`bro.js cmdDeploy() ${out}`);
+      deploying = false;
+      cmdStatus.clear()
+    })
+    .catch(obj => {
+      l.error(`bro.js cmdDeploy() ${obj.code&&('code '+obj.code)} ${obj.out||''} ${obj.error||''}`);
+      deploying = false;
+      cmdStatus.clear()
+      return null;
+    });
 }
 
 let lastDnsUid = null;
