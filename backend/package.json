@@ -3,11 +3,17 @@
   "version": "0.0.0",
   "description": "",
   "main": "index.js",
+  "jest": {
+    "testURL": "http://localhost:8080/",
+    "verbose": true,
+    "automock": false
+  },
   "dependencies": {
     "bcrypt": "^3.0.0",
     "express": "^4.16.3",
     "express-graphql": "^0.6.12",
     "express-session": "^1.15.6",
+    "fs-reverse": "0.0.3",
     "graphql": "^0.13.2",
     "lodash": "^4.17.10",
     "nedb": "^1.8.0",

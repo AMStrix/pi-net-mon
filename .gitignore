@@ -4,6 +4,7 @@ frontend/dist/
 
 #db
 backend/data/*.db
+backend/data/*.tree
 
 # mac
 .DS_Store
