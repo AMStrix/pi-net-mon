@@ -10,6 +10,7 @@ const { ymdh } = require('./f');
 const install = require('./install');
 const spoof = require('./spoof');
 const bro = require('./bro');
+const broalyzer = require('./broalyzer');
 const db = require('./db');
 
 spoof.start();
@@ -54,7 +55,6 @@ let schema = buildSchema(`
     isSpoof: Boolean
     lastPortscanTime: Date
     beingPortscanned: Boolean
-    hits: String
   }
   type BroStatus {
     version: String
@@ -116,6 +116,7 @@ let schema = buildSchema(`
     spoofStatus: SpoofStatus
     remoteHosts(sortField: String, sortDir: Int, skip: Int, limit: Int): [RemoteHost]
     activeHosts(period: String): [RemoteHost]
+    deviceHits24hr(mac: String!, date: Date!): String
   }
 
   type Mutation {
@@ -142,7 +143,6 @@ function devicesToGql(devices) {
 };
 
 function deviceToGql(d) {
-  d.hits && (d.hits = JSON.stringify(d.hits));
   d.beingPortscanned = d.latestIp.ip === spoof.state.portScan.host;
   d.id = d.mac;
   d.ips && (d.ips = Object.values(d.ips));
@@ -199,6 +199,9 @@ let root = {
     return db.getActiveHosts(new Date(Date.now() - 1000*60*60*24), new Date())
       .then(hostsToGql);
   },
+  deviceHits24hr: ({mac, date}) => broalyzer
+    .getHitsForDevice24hr(mac, date)
+    .then(x => JSON.stringify(x)),
 
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),
   installBro: install.install,

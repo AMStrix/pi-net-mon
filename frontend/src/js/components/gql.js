@@ -43,7 +43,6 @@ export const FULL_DEVICE = gql`
 export const DEVICE = gql`
   query device($mac: String!) {
     device(mac: $mac) {
-      hits
       ...FullDevice
     }
     spoofStatus {${SPOOF_STATUS}}
@@ -138,5 +137,15 @@ export const NAME_DEVICE = gql`
   }
   ${FULL_DEVICE}
 `;
+
+export const DEVICE_HITS_24HR = gql`
+  query deviceHits24hr($mac: String!, $date: Date!) {
+    deviceHits24hr(mac: $mac, date: $date)
+  }
+`;
+
+
+
+
 
 

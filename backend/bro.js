@@ -6,6 +6,7 @@ const readdir = util.promisify(fs.readdir);
 const l = require('./log');
 const f = require('./f');
 const db = require('./db');
+const ba = require('./broalyzer');
 
 const BROBIN = '/opt/nsm/bro/bin/broctl';
 
@@ -66,87 +67,8 @@ const cmdDeploy = () => {
     });
 }
 
-let lastDnsUid = null;
-const broHandlers = {
-  http: d => {
-    d = JSON.parse(d);
-    l.info(`bro http > ${d['id.orig_h']} ${d.method} ${d.host} ${d['id.resp_h']} ${d.uri}`);
-    const hitTime = new Date(d.ts * 1000);
-    db.ipToMac(d['id.orig_h']).then(mac => 
-      db.updateRemoteHostHit({
-        host: d.host || d['id.resp_h'],
-        latestHit: hitTime,
-        latestMac: mac,
-        assocHost: d.host ? d['id.resp_h'] : null,
-        source: 'http',
-        protocol: null,
-        service: 'http',
-        mac: mac
-      }) &&
-      db.updateDeviceHostHit({
-        host: d.host || d['id.resp_h'],
-        latestHit: hitTime,
-        mac: mac
-      })
-    )
-  },
-  ssl: d => {
-    d = JSON.parse(d);
-    l.info(`bro ssl > ${d['id.orig_h']} ${d.version} ${d.server_name} ${d['id.resp_h']}`);
-    const hitTime = new Date(d.ts * 1000);
-    db.ipToMac(d['id.orig_h']).then(mac => 
-      db.updateRemoteHostHit({
-        host: d.server_name || d['id.resp_h'],
-        latestHit: hitTime,
-        latestMac: mac,
-        assocHost: d.server_name ? d['id.resp_h'] : null,
-        source: 'ssl',
-        protocol: null,
-        service: 'ssl',
-        mac: mac
-      }) &&
-      db.updateDeviceHostHit({
-        host: d.server_name || d['id.resp_h'],
-        latestHit: hitTime,
-        mac: mac
-      })
-    )
-  },
-  conn: d => {
-
-  },
-  dns: d => {
-    // TODO: look into filtering "rcode_name":"NXDOMAIN"
-    d = JSON.parse(d);
-    if (d.uid === lastDnsUid) { return; } // 2 ident. dns entries coming on the log
-    lastDnsUid = d.uid;
-    l.info(`bro dns > ${d['id.orig_h']} ${d.query} ${d.uid}`);
-    if (d['id.resp_p'] != 53) return; // ignore avahi/bonjour & 137 &etc. for now
-    if (!d.query) return; // ignore if no query (host)
-    const hitTime = new Date(d.ts * 1000);
-    db.ipToMac(d['id.orig_h']).then(mac => 
-      mac && // only if we have a mac (for ipv6 addys)
-      db.updateRemoteHostHit({
-        host: d.query,
-        latestHit: hitTime,
-        latestMac: mac,
-        //assocHost: d['id.resp_h'], //gateway, consider "answers array"
-        source: 'dns',
-        protocol: d.proto,
-        service: 'dns',
-        mac: mac
-      }) &&
-      db.updateDeviceHostHit({
-        host: d.query,
-        latestHit: hitTime,
-        mac: mac
-      })
-    )
-  }
-}
-
-function handleFilechange(src, d) {
-  broHandlers[src] && broHandlers[src](d);
+function handleFilechange(broType, d) {
+  ba.handleBroEvent(broType, JSON.parse(d));
 }
 
 const watching = {};

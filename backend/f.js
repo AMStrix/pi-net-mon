@@ -3,13 +3,13 @@ const _ = require('lodash');
 const l = require('./log');
 
 const cli = module.exports.cli = (cmd, args) => new Promise((res, rej) => {
-  l.verbose(`f.js cli(${cmd}, ${JSON.stringify(args)})`);
+  l.debug(`f.js cli(${cmd}, ${JSON.stringify(args)})`);
   let out = '';
   const child = childProcess.spawn(cmd, args);
   child.stdout.on('data', d => out+=d);
   child.stderr.on('data', d => out+=d);
   child.on('close', code => {
-    l.verbose(`f.js cli(${cmd}, ${JSON.stringify(args)}) closed with code ${code} & output: ${'\n'+out}`);
+    l.debug(`f.js cli(${cmd}, ${JSON.stringify(args)}) closed with code ${code} & output: ${'\n'+out}`);
     code === 0 && res(out) || rej({ code: code, out: out});
   });
   child.on('error', e => {
@@ -19,14 +19,14 @@ const cli = module.exports.cli = (cmd, args) => new Promise((res, rej) => {
 });
 
 const cliSync = module.exports.cliSync = (cmd, args) => {
-  l.verbose(`f.js cliSync(${cmd}, ${JSON.stringify(args)})`);
+  l.debug(`f.js cliSync(${cmd}, ${JSON.stringify(args)})`);
   const child = childProcess.spawnSync(cmd, args);
   if (child.error) {
-    l.error(`f.js cli(${cmd}, ${JSON.stringify(args)}) error ${e.stack}`);
+    l.error(`f.js cliSync(${cmd}, ${JSON.stringify(args)}) error ${e.stack}`);
   }
   if (child.stdout) {
     const out = child.stdout.toString();
-    l.verbose(`f.js cli(${cmd}, ${JSON.stringify(args)}) out: ${'\n'+out}`);
+    l.debug(`f.js cliSync(${cmd}, ${JSON.stringify(args)}) out: ${'\n'+out}`);
     return out;
   }
   return null;
@@ -84,18 +84,4 @@ module.exports.makeHitsByDateSearch = (from, to) => {
   proj[pathFrom] = 1;
   proj[pathTo] = 1;
   return { find: find, proj: proj };
-};
-
-const hostToKey = (h) => h.replace(/\./g, '_');
-const keyToHost = (h) => h.replace(/_/g, '.');
-module.exports.makeDeviceHostHitUpdate = (host, date) => {
-  const out = {};
-  const hKey = hostToKey(host);
-  const ymdhArr = ymdh(date);
-  const pathSum = `hitsSum.${hKey}`;
-  const path = `hits.y${ymdhArr[0]}.m${ymdhArr[1]}.d${ymdhArr[2]}.h${ymdhArr[3]}.host${hKey}`;
-  out.$inc = {};
-  out.$inc[pathSum] = 1;
-  out.$inc[path] = 1;
-  return out;
 };

@@ -146,18 +146,6 @@ describe('makeHitsByDateSearch', () => {
   });
 });
 
-describe('makeDeviceHostHitUpdate', () => {
-  it('generates device host hit update', () => {
-    const date = new Date('2017-11-25T12:34:56.000Z');
-    const res = {
-      $inc: {
-        'hitsSum.www_google_com': 1,
-        'hits.y2017.m10.d25.h12.hostwww_google_com': 1
-      }
-    };
-    expect(f.makeDeviceHostHitUpdate('www.google.com', date)).toEqual(res);
-  })
-})
 
 
 

@@ -38,7 +38,7 @@ Object.keys(INDEXES).forEach(dbn => {
     { fieldName: INDEXES[dbn], unique: true },
     e => e && l.error(`db.js problem indexing ${dbn}.db : ${'\n'+e.stack}`)
   );
-  db[dbn].persistence.setAutocompactionInterval(1000*60*30);
+  //db[dbn].persistence.setAutocompactionInterval(1000*60*30);
   db[dbn].on('compaction.done', () =>  l.info(`db.js ${dbn} compaction done`));
 });
 
@@ -109,12 +109,6 @@ function makeHostUpdate(raw) {
   $set(out, raw, 'protocol', '$addToSet', true);
   $set(out, raw, 'service', '$addToSet', true);
   $set(out, raw, 'mac', '$addToSet', true);
-  if (raw.latestHit) {
-    const ymdh = f.ymdh(raw.latestHit);
-    const path = `hits.y${ymdh[0]}.m${ymdh[1]}.d${ymdh[2]}.h${ymdh[3]}`;
-    out.$inc = {};
-    out.$inc[path] = 1;
-  }
   return out;
 }
 
@@ -192,15 +186,6 @@ module.exports.nameDevice = (mac, name) => new Promise((res, rej) => {
   db.devices.update({ mac: mac }, { $set: { name: name } }, { returnUpdatedDocs: true }, (e, n, d) => {
     e && console.log('nameDevice error', e, JSON.stringify(ds ,null, 2));
     res(d);
-  });
-});
-
-module.exports.updateDeviceHostHit = d => new Promise((res, rej) => {
-  if (!d.mac) { throw new Error('updateDeviceHostHit expected a mac, doc was ',d); }
-  const update = f.makeDeviceHostHitUpdate(d.host, d.latestHit);
-  db.devices.update({ mac: d.mac }, update, {}, (e, n) => {
-    e && console.log('updateDeviceHostHit error', e, JSON.stringify(d, null, 2));
-    res();
   });
 });
 
@@ -296,6 +281,8 @@ module.exports.getActiveHosts = (from, to) => new Promise((res, rej) => {
     res(ds);
   })
 });
+
+// db.devices.update({}, { $unset: { hits: true, hitsSum: true } }, { multi: true }, (a,b) => console.log('DELETED',a,b));
 
 
 

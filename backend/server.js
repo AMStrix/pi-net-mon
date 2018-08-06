@@ -4,9 +4,12 @@ const session = require('./session');
 const gql = require('./gql');
 
 const l = require('./log');
+const broalyzer = require('./broalyzer');
 const spoof = require('./spoof');
 
 const app = express();
+
+broalyzer.init();
 
 app.use(session);
 app.use((req, res, next) => {
@@ -18,9 +21,11 @@ app.use('/graphql', gql);
 app.listen(4000, () => l.info('GraphQL started on localhost:4000/graphql'));
 
 
-async function handleExit(signal) {
+function handleExit(signal) {
   l.info(`*** pi-net-mon shutting down (${signal}) ***`);
-  spoof.onExit().then(() => process.exit());
+  spoof.onExit()
+    .then(() => broalyzer.onExit())
+    .then(() => process.exit());
 }
 
 function handleSignal(signal, fn) {

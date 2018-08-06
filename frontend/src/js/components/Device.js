@@ -6,7 +6,6 @@ import { Icon, Checkbox, Popup } from 'semantic-ui-react';
 import styled from 'styled-components';
 import moment from 'moment';
 
-import { deviceHostsToActivity24h } from './util';
 import { orange, grayText } from '../colors';
 import { DEVICE } from './gql';
 import Grid from './Grid';
@@ -74,7 +73,7 @@ const Device = ({ match: { params: { mac }}}) => (
               }
               content={<NameDeviceControl onSuccess={() => 
                 // close popup
-                setTimeout(()=>deviceNameTrigger.click(),0)
+                setTimeout(() => deviceNameTrigger.click(), 0)
               } 
               focus={true} {...device} />}
               on='click'
@@ -115,7 +114,7 @@ const Device = ({ match: { params: { mac }}}) => (
                 value={!device.ports.length && 'no open ports discovered' || <Ports ports={device.ports} />}
               />
 
-              <DeviceHostChart hits={deviceHostsToActivity24h(device.hits)} />
+              <DeviceHostChart mac={mac} />
 
               <hr/>
               

@@ -82,67 +82,39 @@ module.exports.isHostNewToday = host => {
     false;
 }
 
-function genDeepKeysByHour(from, to) {
-  const hr = 1000 * 60 * 60;
-  const hrCnt = (to - from) / hr;
-  const keys = _.range(hrCnt).map(h => {
-    const d = new Date(from.getTime() + (h * hr));
-    return {
-      key: `y${d.getUTCFullYear()}.m${d.getUTCMonth()}.d${d.getUTCDate()}.h${d.getUTCHours()}`,
-      hr: moment(d).format('ha')
-    };
-  });
-  return keys;
-};
-module.exports.deviceHostsToActivity24h = hitsString => {
-  const hits = JSON.parse(hitsString);
-  const now = new Date();
-  now.setUTCHours(now.getUTCHours() + 1); // include full hour
-  const yesterday = new Date(Date.now() - 1000*60*60*23);
-  const keys = genDeepKeysByHour(yesterday, now);
-  const sums = keys.reduce((a, ko) => {
-    if (_.get(hits, ko.key)) {
-      a.push({
-        ts: ko.hr,
-        sum: _.values(_.get(hits, ko.key)).reduce((a,x) => a+x, 0),
-        h: _.get(hits, ko.key)
-      });
-    } else {
-      a.push({ ts: ko.hr, sum: 0, h: {} }); // no activity
-    }
-    return a;
-  }, []);
-  const topHostsMap = sums.reduce((a, s) => {
-    _.keys(s.h).forEach(k => a[k] ? a[k] += s.h[k] : a[k] = s.h[k]);
-    return a;
-  }, {});
-  let topHostsArr = _.keys(topHostsMap)
-    .map(k => ({ h: k, v: topHostsMap[k] }))
-    .sort((a, b) => b.v - a.v);
-  const otherHostsArr = _.drop(topHostsArr, 5);
-  topHostsArr = _.take(topHostsArr, 5);
-  const keepHosts = topHostsArr.reduce((a, x) => (a[x.h] = true) && a, {});
-  //const sumOtherHosts = otherHostsArr.reduce((a, x) => (a[x] = true) && a, {});
-  _.forIn(sums, (v, k) => {
-    const rem = [];
-    let othersSum = 0;
-    _.forIn(v.h, (hits, host) => {
-      if (!keepHosts[host]) {
-        othersSum += hits;
-        rem.push(host);
-      }
+module.exports.processDeviceHitsForChart = hitString => {
+  const fromServer = JSON.parse(hitString);
+  // top hosts
+  const hosts = fromServer.reduce((hosts, hr) => {
+    _.forEach(hr.device.host, (v, k) => {
+      hosts[k] ? (hosts[k] += v.hits) : (hosts[k] = v.hits);
     });
-    rem.forEach(r => delete v.h[r]);
-    v.otherSum = othersSum;
-  });
-  // fill in missing top hosts (when they have 0 hits) so chart can render
-  sums.forEach(s => topHostsArr.forEach(th => {
-    if (!s.h[th.h]) {
-      s.h[th.h] = 0;
+    return hosts;
+  }, {});
+  const hostsArr = _.transform(hosts, (a, v, k) => a.push([k, v]), []);
+  hostsArr.sort((a, b) => b[1] - a[1]);
+  const topHostsArr = _.take(hostsArr, 5).map(x => ({ h: x[0], v: x[1] }));
+  const topHostsMap = topHostsArr.reduce((a, h) => (a[h.h] = true) && a, {});
+  const totalOtherSum = _.drop(hostsArr, 5).reduce((a, x) => a += x[1], 0);
+  // data 
+  const data = fromServer.map(item => {
+    const hrLabel = moment(item.time).format('ha');
+    const topH = _.transform(topHostsMap, (a, v, k) => {
+      item.device.host[k] && (a[k] = item.device.host[k].hits) || (a[k] = 0);
+    }, {});
+    const topHSum = _.reduce(topH, (a, v) => a + v, 0);
+    return {
+      ts: hrLabel,
+      sum: item.device.hits,
+      otherSum: item.device.hits - topHSum,
+      h: topH
     }
-  }));
-  const totalOtherSum = sums.reduce((tot, s) => s.otherSum + tot, 0);
-  return { data: sums, topHosts: topHostsArr, totalOtherSum: totalOtherSum };
+  });
+  return {
+    totalOtherSum: totalOtherSum,
+    topHosts: topHostsArr,
+    data: data
+  }
 }
 
 
