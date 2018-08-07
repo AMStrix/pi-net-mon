@@ -7,8 +7,9 @@ import { Dropdown } from 'semantic-ui-react';
 import moment from 'moment';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
+import { ALL_HOST_HITS_24HR } from './gql';
 import { orange } from '../colors';
-import { processActiveHostsHourlySums } from './util';
+import { processAllHostHitsForChart } from './util';
 import Grid from './Grid';
 
 const ACTIVE_HOSTS = gql`
@@ -52,7 +53,7 @@ const Hosts = ({ match: { url }}) => (
                   defaultValue={graphOptions[0].value}
                 />
               </div>
-              <Activity />
+              <AllHosts />
             </Style>
           </Grid>
         )} 
@@ -60,19 +61,16 @@ const Hosts = ({ match: { url }}) => (
     </Switch>
 );
 
-const Activity = () => (
+const AllHosts = () => (
   <Query 
-    query={ACTIVE_HOSTS} 
-    variables={{ period: '1d'}} 
-    pollInterval={1000*60*10}
+    query={ALL_HOST_HITS_24HR} 
+    variables={{ date: new Date() }} 
   >
-    {({ loading, error, data: { activeHosts } }) => {
+    {({ loading, error, data: { allHostHits24hr } }) => {
       if (loading) return "Loading...";
       if (error) return `Error! ${error.message}`;
-      const hosts = processActiveHostsHourlySums(activeHosts);
-      return (
-        <ActivityChart data={hosts} />
-      );
+      const hosts = processAllHostHitsForChart(allHostHits24hr);
+      return (<ActivityChart data={hosts} />);
     }}
   </Query>
 );
@@ -85,7 +83,15 @@ const Maxima = (p) => {
   if (!p.payload.maxima) { return null; }
   return (<g>
     <rect x={p.cx-(rAlign?w:0)} y={p.cy-h} width={w-2} height={h} fill='gray' />
-    <text x={p.cx+(rAlign?(-w):w)} y={p.cy+(10/3)} textAnchor={rAlign?'end':'start'} fontSize="10" fill="gray">{p.payload.v}</text>
+    <text 
+      x={p.cx+(rAlign?(-w):w)} 
+      y={p.cy+(10/3)} 
+      textAnchor={rAlign?'end':'start'} 
+      fontSize="10" 
+      fill="gray"
+    >
+      {p.payload.v}
+    </text>
   </g>);
 };
 
@@ -98,9 +104,23 @@ const ActivityChart = ({data}) =>(
           <stop offset="95%" stopColor={orange()} stopOpacity={0}/>
         </linearGradient>
       </defs>
-      <XAxis dataKey='ts' interval='preserveStartEnd' axisLine={false} tickSize={0} tick={{ fontSize: 10 }} />
+      <XAxis 
+        dataKey='ts' 
+        interval='preserveStartEnd' 
+        axisLine={false} 
+        tickSize={0} 
+        tick={{ fontSize: 10 }} 
+      />
       {/*<YAxis dataKey='v' interval='preserveEnd' axisLine={false} tickSize={0} tick={{ fontSize: 10 }} tickMargin={-10} />*/}
-      <Area dot={<Maxima/>} stackId='0' type='monotone' dataKey='v' stroke='#ff7a00' fillOpacity={1} fill="url(#colorUv)" />
+      <Area 
+        dot={<Maxima/>} 
+        stackId='0' 
+        type='monotone' 
+        dataKey='v' 
+        stroke='#ff7a00' 
+        fillOpacity={1} 
+        fill="url(#colorUv)" 
+      />
       {/*<Area stackId='0' type='monotone' dataKey='pv' fill='blue' />*/}
     </AreaChart>
   </ResponsiveContainer>

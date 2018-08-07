@@ -291,22 +291,37 @@ const updateTree = (ip, host, date, source, uid) => {
   })
 };
 
-const getHitsForDevice24hr = module.exports.getHitsForDevice24hr = (mac, date) => 
+const make24hrDates = toms => _.range(0, 25)
+  .map(h => hoursAgo(h, toms))
+  .map(d => d.setMinutes(0, 0, 0) && d)
+  .reverse();
+
+const make24hrPaths = toms =>  make24hrDates(toms)
+  .map(d => ({ path: makeHrPath(d), date: d }));
+
+module.exports.getHitsForDevice24hr = (mac, date) => 
   new Promise((res, rej) => {
-    const nowms = Date.now();
-    const hrDates = _.range(0, 25)
-      .map(h => hoursAgo(h, nowms))
-      .map(d => d.setMinutes(0,0,0)&&d)
-      .reverse();
-    const paths = hrDates.map(hourDate => makeHrPath(hourDate));
-    const deviceByHr = paths.map(p => _.get(tree, `${p}.device.${mac}`, { hits: 0, host: {}}));
-    const hrAndDev = _.zip(hrDates, deviceByHr)
-      .map(([hr, dev]) => ({ time: hr, device: dev }));
-    //console.log('hrAndDev', hrAndDev);
-    res(hrAndDev);
-    // console.log('paths', paths);
-    //console.log('tree', tree.y2018.m7.d6);
-    // console.log('device', deviceByHr);
+    const paths = make24hrPaths(date.getTime());
+    const deviceByHr = paths.map(p => ({ 
+      time: p.date, 
+      device: _.get(tree, `${p.path}.device.${mac}`, { hits: 0, host: {} })
+    }));
+    res(deviceByHr);
+  });
+
+module.exports.getHitsForHost24hr = (host, date) =>
+  new Promise((res, rej) => {
+    res(null);
+  });
+
+module.exports.getHitsForAllHosts24hr = date => 
+  new Promise((res, rej) => {
+    const paths = make24hrPaths(date.getTime());
+    const hostsByHour = paths.map(p => ({
+      time: p.date,
+      host: _.get(tree, `${p.path}.host`, {})
+    }));
+    res(hostsByHour);
   });
 
 const loadTreeHrSnapshot = () => promisify(fs.readFile)('data/snapshot.hr.tree')

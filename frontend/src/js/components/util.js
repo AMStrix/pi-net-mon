@@ -65,14 +65,14 @@ module.exports.processActiveHostsHourlySums = activeHosts => {
     start.setHours(start.getHours() - 1);
     return z;
   });
-  const isMaxima = (x, i, arr) => {
+  const isMaxima = (x, i, arr, pArr) => {
     const gt = (a, b) => _.isNumber(b) ? a > b : true;
     const m = gt(x, arr[i-1]) && gt(x, arr[i+1]);
     const sig = (x, b, a) => 
       (Math.abs(x - b) > 0.05 * max) || (Math.abs(x - b) > 0.05 * max);
-    m && sig(x, arr[i-1], arr[i+1]) && (out[i].maxima = true);
+    m && sig(x, arr[i-1], arr[i+1]) && (pArr[i].maxima = true);
   }
-  out.map(x => x.v).map((x, i, arr) => isMaxima(x,i,arr));
+  out.map(x => x.v).map((x, i, arr) => isMaxima(x, i, arr, out));
   return interpolateLastHour(out.reverse());
 }
 
@@ -80,6 +80,26 @@ module.exports.isHostNewToday = host => {
   return host.birthday ?
     (new Date()).getDate() === (new Date(host.birthday)).getDate() :
     false;
+}
+
+const tagMaxima = (x, i, arr, pArr, max) => {
+  const gt = (a, b) => _.isNumber(b) ? a > b : true;
+  const m = gt(x, arr[i-1]) && gt(x, arr[i+1]);
+  const sig = (x, b, a) => 
+    (Math.abs(x - b) > 0.05 * max) || (Math.abs(x - b) > 0.05 * max);
+  m && sig(x, arr[i-1], arr[i+1]) && (pArr[i].maxima = true);
+}
+
+module.exports.processAllHostHitsForChart = hitString => {
+  const fromServer = JSON.parse(hitString);
+  const sumByHr = fromServer.map(hr => {
+    const hrLabel = moment(hr.time).format('ha');
+    const sum = _.values(hr.host).reduce((sum, {hits}) => sum+hits, 0);
+    return { ts: hrLabel, v: sum };
+  });
+  const max = sumByHr.reduce((m, x) => Math.max(m, x.v), 0);
+  sumByHr.map(x => x.v).forEach((x, i, arr) => tagMaxima(x, i, arr, sumByHr, max));
+  return sumByHr;
 }
 
 module.exports.processDeviceHitsForChart = hitString => {
