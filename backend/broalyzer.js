@@ -172,8 +172,6 @@ const broHandlers = {};
 
 const isStringIp = s => s.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
 
-const ipToHost = {};
-
 let durationMax = 0;
 let durationTotal = 0;
 let durationCount = 0;
@@ -199,14 +197,15 @@ broHandlers.dns = group => {
     let ips = _.get(_.find(group, 'answers'), 'answers', []);
     const weird = (_.find(group, { broType: 'weird' })||{}).name;
     ips = ips.reduce((a, x) => (isStringIp(x)&&a.push(x)&&a)||a, []);
-    ips.forEach(ip => ipToHost[ip] = host);
+    ips.forEach(ip => db.addIpToHost(ip, host, new Date(tsms)));
   }
   const origIp = group[0]['id.orig_h'];
   const respIp = group[0]['id.resp_h'];
   const port = group[0]['id.resp_p'];
   if (port == 53 && host) {
     l.verbose(`bro dns > ${origIp} ${host} (${respIp})`);
-    return updateTree(origIp, host, new Date(tsms), 'dns', uid);
+    return updateTree(origIp, host, new Date(tsms), 'dns', uid)
+      .then(() => updateDb(origIp, host, new Date(tsms), 'dns', respIp));
   }
   return Promise.resolve();
 };
@@ -217,13 +216,13 @@ broHandlers.ssl = group => {
   const tsms = group[0].ts * 1000;
   const origIp = group[0]['id.orig_h'];
   const respIp = group[0]['id.resp_h'];
-  let host = _.get(_.find(group, 'server_name'), 'server_name', null);
-  let hostb = ipToHost[respIp];
-  l.verbose(`bro ssl > ${origIp} ${host||hostb} (${respIp})`);
-  if (!host && !hostb) { 
-    l.info(`broalyser.js did not find a host for ${respIp} (ssl)`);
+  let host = _.get(_.find(group, 'server_name'), 'server_name');
+  l.verbose(`bro ssl > ${origIp} ${host} (${respIp})`);
+  if (!host) { 
+    l.info(`XXXXXXXXXXXXXX broalyser.js did not find a host for ${respIp} (ssl)`);
   } else {
-    return updateTree(origIp, host||hostb, new Date(tsms), 'ssl', uid);
+    return updateTree(origIp, host, new Date(tsms), 'ssl', uid)
+      .then(() => updateDb(origIp, host, new Date(tsms), 'ssl', respIp));
   }
   return Promise.resolve();
   //console.log('>>>', host || 'null server_name resp_h: ', respIp);
@@ -234,6 +233,22 @@ broHandlers.ssl = group => {
   // });
 };
 
+const updateDb = (ip, host, date, source, hostIp) => db.ipToMac(ip)
+  .then(mac => 
+    db.addIpToHost(hostIp, host, date)
+      .then(() =>
+        db.updateRemoteHostHit({
+          host: host,
+          latestHit: date,
+          latestMac: mac,
+          assocHost: hostIp,
+          source: source,
+          protocol: null,
+          service: null,
+          mac: mac
+        })
+      )
+  );
 
 
 const tree = {};

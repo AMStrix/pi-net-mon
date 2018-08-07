@@ -6,7 +6,7 @@ const _ = require('lodash');
 const l = require('./log');
 const f = require('./f');
 
-const DBS = ['users', 'localIps', 'devices', 'remoteHosts'];
+const DBS = ['users', 'localIps', 'devices', 'remoteHosts', 'ipToHost'];
 
 const dbOnload = (name, e) => {
   if (!e) {
@@ -30,7 +30,8 @@ const INDEXES = {
   users: 'username',
   devices: 'mac',
   localIps: 'ip',
-  remoteHosts: 'host'
+  remoteHosts: 'host',
+  ipToHost: 'ip'
 };
 
 Object.keys(INDEXES).forEach(dbn => {
@@ -43,7 +44,7 @@ Object.keys(INDEXES).forEach(dbn => {
 });
 
 db.remoteHosts.ensureIndex({ fieldName: 'latestHit' }, 
-    e => e && console.log(e));
+    e => e && l.error(`db.js problem indexing remoteHosts.db (latestHit) : ${'\n'+e.stack}`));
 
 // data manipulation
 function makeLocalIp(d) {
@@ -257,6 +258,17 @@ module.exports.updateRemoteHostHit = (raw) => {
     )
   });
 }
+
+module.exports.addIpToHost = (ip, host, time) => new Promise((res, rej) => {
+  db.ipToHost.update(
+    { ip: ip }, 
+    { ip: ip, host: host, time: time },
+    (e, reps, upserted) => {
+      e && l.error(`db.addIpToHost ${ip} -> ${host} error: ${'\n'+e}`);
+      res();
+    })
+});
+
 
 module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise((res, rej) => {
   let sort = {};
