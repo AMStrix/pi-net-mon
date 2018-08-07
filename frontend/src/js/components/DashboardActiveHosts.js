@@ -8,9 +8,9 @@ import { List, Icon, Loader } from 'semantic-ui-react';
 import moment from 'moment';
 import styled from 'styled-components';
 
-import { ACTIVE_HOSTS } from './gql';
+import { ALL_HOST_HITS_24HR } from './gql';
 import { orange, grayText } from '../colors';
-import { processActiveHostHitSums } from './util';
+import { processAllHostHitsForActive } from './util';
 import Grid from './Grid';
 
 const Style = styled.div`
@@ -49,18 +49,18 @@ const Style = styled.div`
 const DashboardActiveHosts = () => (
   <Grid.Item>
     <Query 
-      query={ACTIVE_HOSTS} 
-      variables={{ period: '1d'}} 
+      query={ALL_HOST_HITS_24HR} 
+      variables={{ date: new Date() }} 
       pollInterval={30000}
     >
-      {({ loading, error, data: {activeHosts} }) => {
+      {({ loading, error, data: {allHostHits24hr} }) => {
         if (loading) return <Loading n={30} />;
         if (error) return `Error! ${error.message}`;
-        const hosts = processActiveHostHitSums(activeHosts);
+        const hosts = processAllHostHitsForActive(allHostHits24hr);
         const gw = hc => ((hc / hosts.max) * 100) + '%';
         return (
           <Style>
-            <div>Active Hosts Today ({hosts.count})</div>
+            <div>Active Hosts Today ({hosts.hosts.length})</div>
             <hr />
             <div className='_middle scroll'>
               { !hosts.hosts.length && 'no active hosts' }
