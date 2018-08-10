@@ -174,10 +174,13 @@ function spoofable(ip) {
 function spoofLoop() {
   db.getDevices({ isSpoof: true }).then(ds => {
     ds.forEach(d => arpSpoof(d.latestIp.ip));
-  });
-  db.getDevices({ isSpoof: false }).then(ds => {
-    const kill = spoofChild => spoofChild && spoofChild.kill('SIGINT');
-    ds.forEach(d => kill(spoofing[d.latestIp.ip]));
+    return ds.map(d => d.latestIp.ip);
+  }).then(spoofingIps => {
+    db.getDevices({ isSpoof: false, latestIp: { ip: { $nin: spoofingIps } } })
+      .then(ds => {
+        const kill = spoofChild => spoofChild && spoofChild.kill('SIGINT');
+        ds.forEach(d => kill(spoofing[d.latestIp.ip]));
+      });
   });
 }
 
@@ -196,7 +199,7 @@ function arpSpoof(ip) {
   child.stderr.on('data', e => l.debug(e));
   child.on('close', x => {
     l.info(`CLOSE arpspoof ${ip} with code: ${x}`);
-    spoofing[ip] = null; // clear the child after close
+    delete spoofing[ip]; // clear the child after close
   });
   child.on('error', e => {
     l.error('arpSpoof ' + ip + JSON.stringify(e));
