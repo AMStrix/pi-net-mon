@@ -219,9 +219,13 @@ broHandlers.ssl = group => {
   let host = _.get(_.find(group, 'server_name'), 'server_name');
   l.verbose(`bro ssl > ${origIp} ${host} (${respIp})`);
   if (!host) { 
-    l.info(`XXXXXXXXXXXXXX broalyser.js did not find a host for ${respIp} (ssl)`);
+    l.info(`XXXXXXXXXXXXXX broalyser.ssl did not find a host for ${respIp} (ssl)`);
+    return db.getHostForIp(respIp)
+      .then(hostFromDb => udpateDb(origIp, hostFromDb, new Date(tsms), 'ssl', respIp))
+      .catch(() => l.info(`XXXXXXXXXXXXXX broalyzer.ssl no host for ${respIp} from db.getHostForIp`));
   } else {
     return updateTree(origIp, host, new Date(tsms), 'ssl', uid)
+      .then(() => db.addIpToHost(respIp, host, new Date(tsms)))
       .then(() => updateDb(origIp, host, new Date(tsms), 'ssl', respIp));
   }
   return Promise.resolve();
@@ -235,19 +239,16 @@ broHandlers.ssl = group => {
 
 const updateDb = (ip, host, date, source, hostIp) => db.ipToMac(ip)
   .then(mac => 
-    db.addIpToHost(hostIp, host, date)
-      .then(() =>
-        db.updateRemoteHostHit({
-          host: host,
-          latestHit: date,
-          latestMac: mac,
-          assocHost: hostIp,
-          source: source,
-          protocol: null,
-          service: null,
-          mac: mac
-        })
-      )
+    db.updateRemoteHostHit({
+      host: host,
+      latestHit: date,
+      latestMac: mac,
+      assocHost: hostIp,
+      source: source,
+      protocol: null,
+      service: null,
+      mac: mac
+    })
   );
 
 
@@ -274,6 +275,7 @@ const makeDayPath = d =>
 const updateTree = (ip, host, date, source, uid) => {
  return db.ipToMac(ip) 
   .then(mac => {
+
     // time
     const hrNode = setGetPath(tree, makeHrPath(date), { host: {}, device: {} });
 
@@ -444,7 +446,7 @@ function arborist() {
 let watchEventsByUidBufferIntervalId = null;
 let arboristIntervalId = null;
 const init = module.exports.init = () => {
-  loadTreeHrSnapshot()
+  return loadTreeHrSnapshot()
     .then(() => {
       !arboristIntervalId && (arboristIntervalId = setInterval(arborist, 30000));
     })

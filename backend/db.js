@@ -206,9 +206,14 @@ module.exports.updateDeviceByIp = d => new Promise((res, rej) => {
 });
 
 module.exports.ipToMac = f.memoizePeriodic(ip => new Promise((res, rej) => 
-  db.devices.findOne({ 'latestIp.ip': ip }, { mac: 1 }, (err, d) => {
+  db.devices.find({ 'latestIp.ip': ip }, { mac: 1, 'latestIp.seen': 1 }, (err, ds) => {
     err && (console.log(`ipToMac(${ip}) error: `, err));
-    d ? res(d.mac) : res();
+    if (ds && ds.length) {
+      const sorted = _.sortBy(ds, ['latestIp.seen']).reverse();
+      res(sorted[0].mac);
+    } else {
+      res();
+    }
   })
 ));
 
@@ -267,6 +272,13 @@ module.exports.addIpToHost = (ip, host, time) => new Promise((res, rej) => {
       e && l.error(`db.addIpToHost ${ip} -> ${host} error: ${'\n'+e}`);
       res();
     })
+});
+
+module.exports.getHostForIp = ip => new Promise((res, rej) => {
+  db.ipToHost.findOne({ ip: ip }, {}, (e, d) => {
+    e && l.error(`db.getHostForIp(${ip}) error: ${e}`);
+    d && res(d.host) || rej();
+  });
 });
 
 
