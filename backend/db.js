@@ -160,12 +160,14 @@ module.exports.updateLocalIp = (d) => {
     (e, reps, up) => {}
   );
 }
+
 function handleNewDevice(d) {
   if (d.birthday) { return; } // already has birthday
   db.devices.update({ mac: d.mac }, { $set: { birthday: new Date() } }, (err, r) => {
     err && (console.log(`handleNewDevice(${d.mac}) error: `, err, JSON.stringify(d)));
   })
 }
+
 module.exports.updateDevice = d => new Promise((res, rej) => {
   if (!d.mac) { throw new Error('db.js updateDevice, must have mac! was: ', d); }
   db.devices.findOne({ mac: d.mac }, (e, old) => {
@@ -221,13 +223,12 @@ const macToName = module.exports.macToName = f.memoizePeriodic(mac => new Promis
   db.devices.findOne({ 'mac': mac }, { name: 1 }, (err, d) => {
     err && (console.log(`macToName(${mac}) error: `, err));
     d ? res(d.name) : res();
-    //console.log('macToName ', mac, d.name);
   })
 ));
 
 module.exports.getDevices = (searchObj) =>
   new Promise((res, rej) => {
-    db.devices.find(searchObj || {}, { hits: 0 }, (e, ds) => {
+    db.devices.find(searchObj || {}, {}, (e, ds) => {
       e ? rej(e) : res(ds);
     });
   });
@@ -235,12 +236,7 @@ module.exports.getDevices = (searchObj) =>
 module.exports.getDevice = mac => new Promise((res, rej) =>
   db.devices.findOne({ mac: mac }, (e, d) => e ? rej(e) : res(d)));
 
-module.exports.getDeviceHits = (mac, from, to) => new Promise((res, rej) => {
-
-});
-
 function handleNewHost(hostDoc) {
-  // console.log('NEW HOST', JSON.stringify(hostDoc));
   if (hostDoc.birthday) { return; } // already has birthday
   db.remoteHosts.update({ host: hostDoc.host }, { $set: { birthday: new Date() } }, (err, r) => {
     err && (console.log(`handleNewHost(${hostDoc.host}) error: `, err, JSON.stringify(hostDoc)));
@@ -249,7 +245,6 @@ function handleNewHost(hostDoc) {
 
 module.exports.updateRemoteHostHit = (raw) => {
   const forDb = makeHostUpdate(raw);
-  //console.log('>>>> makeHostUpdate wet run:\n', JSON.stringify(forDb,null,2), '\n\n');
   return new Promise((res, rej) => {
     db.remoteHosts.update(
       { host: raw.host },
@@ -285,7 +280,7 @@ module.exports.getHostForIp = ip => new Promise((res, rej) => {
 module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise((res, rej) => {
   let sort = {};
   sortField && (sort[sortField] = sortDir) || (sort.latestHit = -1);
-  db.remoteHosts.find({}, { hits: 0 })
+  db.remoteHosts.find({}, {})
     .sort(sort)
     .skip(skip||0)
     .limit(limit||30)
@@ -297,16 +292,7 @@ module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise
     })
 });
 
-module.exports.getActiveHosts = (from, to) => new Promise((res, rej) => {
-  const x = f.makeHitsByDateSearch(from, to);
-  db.remoteHosts.find(x.find, x.proj, (e,ds) =>{
-    e && console.log(e);
-    //ds.forEach(x => console.log(x.host, x.hits.y2018.m6.d23, x.hits.y2018.m6.d24));
-    res(ds);
-  })
-});
-
-// db.devices.update({}, { $unset: { hits: true, hitsSum: true } }, { multi: true }, (a,b) => console.log('DELETED',a,b));
+//db.remoteHosts.update({}, { $unset: { hits: true, hitsSum: true } }, { multi: true }, (a,b) => console.log('$unset',a,b));
 
 
 

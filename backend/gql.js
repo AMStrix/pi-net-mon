@@ -130,7 +130,6 @@ let schema = buildSchema(`
     device(mac: String!): Device
     spoofStatus: SpoofStatus
     remoteHosts(sortField: String, sortDir: Int, skip: Int, limit: Int): [RemoteHost]
-    activeHosts(period: String): [RemoteHost]
     allHostHits24hr(date: Date!): String
     deviceHits24hr(mac: String!, date: Date!): String
     threatFeeds: [Feed]
@@ -213,10 +212,6 @@ let root = {
   remoteHosts: ({sortField, sortDir, skip, limit}) => 
     db.getRemoteHosts(sortField, sortDir, skip, limit)
     .then(hostsToGql),
-  activeHosts: ({period}) => {
-    return db.getActiveHosts(new Date(Date.now() - 1000*60*60*24), new Date())
-      .then(hostsToGql);
-  },
   allHostHits24hr: ({date}) => broalyzer
     .getHitsForAllHosts24hr(new Date(date))
     .then(JSON.stringify),

@@ -63,25 +63,3 @@ module.exports.ymdh = ymdh = date => [
   date.getUTCHours()
 ];
 
-module.exports.dateToArray = dateToArray = d => _.dropRight(ymdh(d));
-
-module.exports.makeDatePath = makeDatePath = d => {
-  const dArr = dateToArray(d);
-  const bp = (s, p, v) => _.isNumber(v) ? (s + '.' + p + v) : s;
-  const makePath = (y, m, d, h) => _.zip(['y', 'm', 'd', 'h'], [y, m, d, h])
-    .reduce((a, x) => bp(a, x[0], x[1]), 'hits');
-  return makePath.apply(null, dArr);
-};
-
-module.exports.makeHitsByDateSearch = (from, to) => {
-  const pathFrom = makeDatePath(from);
-  const pathTo = makeDatePath(to);
-  const find = { $or: [{}, {}] }; 
-  const op = _.isNumber(from[3]) && { $gt: 0 } || { $exists: true };
-  find.$or[0][pathFrom] = op;
-  find.$or[1][pathTo] = op;
-  const proj = { host: 1 }; 
-  proj[pathFrom] = 1;
-  proj[pathTo] = 1;
-  return { find: find, proj: proj };
-};
