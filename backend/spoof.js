@@ -1,4 +1,5 @@
 const childProcess = require('child_process');
+const _ = require('lodash');
 const nmap = require('./node-nmap');
 
 const l = require('./log');
@@ -90,10 +91,20 @@ function pingSweep() {
   }
 }
 
+const removeOldDuplicateIps = ds => _.values(
+  ds.reduce((a, d) => {
+    const exist = a[d.latestIp.ip];
+    if (!exist || (exist && exist.latestIp.seen - d.latestIp.seen < 0)) {
+      a[d.latestIp.ip] = d;
+    }
+    return a;
+  }, {})
+);
+
 function portScanLoop() {
   if (currentPortScan) { return; } // one at a time
   db.getDevices().then(ds => {
-    ds.forEach(d => {
+    removeOldDuplicateIps(ds).forEach(d => {
       portScanIfStale(d.latestIp.ip, d.lastPortscanTime);
     })
   });
