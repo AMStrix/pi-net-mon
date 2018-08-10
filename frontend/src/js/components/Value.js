@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import styled from 'styled-components';
+import _ from 'lodash';
 
 import { grayText } from '../colors';
 
@@ -32,7 +33,7 @@ const Label = styled.div`
 const Value = p => {
   const {label, value} = p;
   return (<Style {...p}>
-    { (typeof value == 'string') && <Item {...p}>{value}</Item> || value }
+    {!_.isObject(value) && <Item {...p}>{value}</Item> || value}
     {label&&<Label {...p}>{label}</Label>}
   </Style>);
 }
