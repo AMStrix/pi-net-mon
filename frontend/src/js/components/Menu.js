@@ -13,6 +13,9 @@ const Menu = () => (
     <SuiMenu.Item name='hosts' as={NavLink} to='/hosts' activeClassName='active'>
       Hosts
     </SuiMenu.Item>
+    <SuiMenu.Item name='feeds' as={NavLink} to='/feeds' activeClassName='active'>
+      Feeds
+    </SuiMenu.Item>
   </SuiMenu>
 );
 

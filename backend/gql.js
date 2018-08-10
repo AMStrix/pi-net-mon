@@ -12,6 +12,7 @@ const spoof = require('./spoof');
 const bro = require('./bro');
 const broalyzer = require('./broalyzer');
 const db = require('./db');
+const feeds = require('./feeds');
 
 spoof.start();
 
@@ -104,6 +105,20 @@ let schema = buildSchema(`
     macs: [String]
     hits: String
   }
+  type Feed {
+    id: String!
+    type: String
+    description: String
+    name: String
+    lastupdate: String
+    datatype: String
+    frequency: Int
+    active: Boolean
+    count: Int
+    rulesCount: Int
+    processing: Boolean
+    error: String
+  }
 
 
   type Query {
@@ -118,6 +133,7 @@ let schema = buildSchema(`
     activeHosts(period: String): [RemoteHost]
     allHostHits24hr(date: Date!): String
     deviceHits24hr(mac: String!, date: Date!): String
+    threatFeeds: [Feed]
   }
 
   type Mutation {
@@ -127,6 +143,7 @@ let schema = buildSchema(`
     spoofDevice(ip: String!, isSpoof: Boolean): SpoofResult
     deployBro: BroStatus,
     nameDevice(mac: String!, name: String!): DeviceResult
+    activateThreatFeed(id: String!, active: Boolean!): [Feed]
   }
 
 `);
@@ -206,6 +223,7 @@ let root = {
   deviceHits24hr: ({mac, date}) => broalyzer
     .getHitsForDevice24hr(mac, new Date(date))
     .then(JSON.stringify),
+  threatFeeds: () => feeds.getFeeds(),
 
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),
   installBro: install.install,
@@ -233,6 +251,7 @@ let root = {
       .then(deviceToGql)
       .then(d => ({ device: d }))
       .catch(e => ({ error: e })),
+  activateThreatFeed: ({id, active}) => feeds.activateFeed(id, active),
 };
 module.exports = expressGraphql({
   schema: schema,

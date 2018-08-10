@@ -11,6 +11,7 @@ import Install from './Install';
 import Dashboard from './Dashboard';
 import Devices from './Devices';
 import Hosts from './Hosts';
+import Feeds from './Feeds';
 import Login from './Login';
 
 const Wrapper = styled.div`
@@ -65,6 +66,7 @@ class App extends Component {
             <Route exact path='/' component={Dashboard} />
             <Route path='/devices' component={Devices} />
             <Route path='/hosts' component={Hosts} />
+            <Route path='/feeds' component={Feeds} />
           </Switch>
         </ContentWrapper>
       </Wrapper>

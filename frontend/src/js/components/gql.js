@@ -150,6 +150,37 @@ export const ALL_HOST_HITS_24HR = gql`
   }
 `;
 
+export const THREAT_FEEDS = gql`
+  query threatFeeds {
+    threatFeeds {
+      id
+      type
+      description
+      name
+      lastupdate
+      datatype
+      frequency
+      active
+      count
+      rulesCount
+      processing
+      error
+    }
+  }
+`;
+
+export const ACTIVATE_THREAT_FEED = gql`
+  mutation activateThreatFeed($id: String!, $active: Boolean!) {
+    activateThreatFeed(id: $id, active: $active) {
+      id
+      active
+      rulesCount
+      processing
+      error
+    }
+  }
+`;
+
 
 
 
