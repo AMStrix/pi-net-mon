@@ -107,6 +107,27 @@ export const REMOTE_HOSTS = gql`
   }
 `;
 
+export const REMOTE_HOSTS_PAGE = gql`
+  query remoteHostsPage($sortField: String, $sortDir: Int, $skip: Int, $limit: Int) {
+    remoteHostsPage(sortField: $sortField, sortDir: $sortDir, skip: $skip, limit: $limit) {
+      count
+      hosts {
+        id
+        host
+        birthday
+        latestHit
+        latestMac
+        latestDeviceName
+        assocHost
+        sources
+        protocols
+        services
+        macs
+      }
+    }
+  }
+`;
+
 export const DEPLOY_BRO = gql`
   mutation deploy {
     deployBro {

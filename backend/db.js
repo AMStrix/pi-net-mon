@@ -276,8 +276,17 @@ module.exports.getHostForIp = ip => new Promise((res, rej) => {
   });
 });
 
+module.exports.getRemoteHostsPage = (sortField, sortDir, skip, limit) => new Promise((res, rej) => {
+  getRemoteHosts(sortField, sortDir, skip, limit)
+    .then(hosts => {
+      db.remoteHosts.count({}, (e, count) => res({
+        hosts: hosts,
+        count: count
+      }));
+    });
+});
 
-module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise((res, rej) => {
+const getRemoteHosts = module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise((res, rej) => {
   let sort = {};
   sortField && (sort[sortField] = sortDir) || (sort.latestHit = -1);
   db.remoteHosts.find({}, {})

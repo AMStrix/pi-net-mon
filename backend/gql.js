@@ -88,7 +88,7 @@ let schema = buildSchema(`
     spoofError: String
   }
   type DeviceResult {
-    device: Device,
+    device: Device
     error: String
   }
   type RemoteHost {
@@ -119,6 +119,10 @@ let schema = buildSchema(`
     processing: Boolean
     error: String
   }
+  type RemoteHostsPage {
+    hosts: [RemoteHost]
+    count: Int
+  }
 
 
   type Query {
@@ -130,6 +134,7 @@ let schema = buildSchema(`
     device(mac: String!): Device
     spoofStatus: SpoofStatus
     remoteHosts(sortField: String, sortDir: Int, skip: Int, limit: Int): [RemoteHost]
+    remoteHostsPage(sortField: String, sortDir: Int, skip: Int, limit: Int): RemoteHostsPage
     allHostHits24hr(date: Date!): String
     deviceHits24hr(mac: String!, date: Date!): String
     threatFeeds: [Feed]
@@ -212,6 +217,12 @@ let root = {
   remoteHosts: ({sortField, sortDir, skip, limit}) => 
     db.getRemoteHosts(sortField, sortDir, skip, limit)
     .then(hostsToGql),
+  remoteHostsPage: ({sortField, sortDir, skip, limit}) => 
+    db.getRemoteHostsPage(sortField, sortDir, skip, limit)
+    .then(x => {
+      x.hosts = hostsToGql(x.hosts);
+      return x;
+    }),
   allHostHits24hr: ({date}) => broalyzer
     .getHitsForAllHosts24hr(new Date(date))
     .then(JSON.stringify),
