@@ -210,6 +210,27 @@ broHandlers.dns = group => {
   return Promise.resolve();
 };
 
+broHandlers.http = group => {
+  const uid = group[0].uid;
+  group.sort((a,b) => a.ts - b.ts);
+  const tsms = group[0].ts * 1000;
+  const origIp = group[0]['id.orig_h'];
+  const respIp = group[0]['id.resp_h'];
+  let host = _.get(_.find(group, 'host'), 'host');
+  l.verbose(`bro http > ${origIp} ${host} (${respIp})`);
+  if (!host) { 
+    l.info(`XXXXXXXXXXXXXX broalyser.http did not see a host for ${respIp} (http)`);
+    return db.getHostForIp(respIp)
+      .then(hostFromDb => udpateDb(origIp, hostFromDb, new Date(tsms), 'http', respIp))
+      .catch(() => l.info(`XXXXXXXXXXXXXX broalyzer.http no host for ${respIp} from db.getHostForIp`));
+  } else {
+    return updateTree(origIp, host, new Date(tsms), 'http', uid)
+      .then(() => db.addIpToHost(respIp, host, new Date(tsms)))
+      .then(() => updateDb(origIp, host, new Date(tsms), 'http', respIp));
+  }
+  return Promise.resolve();
+};
+
 broHandlers.ssl = group => {
   const uid = group[0].uid;
   group.sort((a,b) => a.ts - b.ts);
@@ -219,7 +240,7 @@ broHandlers.ssl = group => {
   let host = _.get(_.find(group, 'server_name'), 'server_name');
   l.verbose(`bro ssl > ${origIp} ${host} (${respIp})`);
   if (!host) { 
-    l.info(`XXXXXXXXXXXXXX broalyser.ssl did not find a host for ${respIp} (ssl)`);
+    l.info(`XXXXXXXXXXXXXX broalyser.ssl did not see a host for ${respIp} (ssl)`);
     return db.getHostForIp(respIp)
       .then(hostFromDb => udpateDb(origIp, hostFromDb, new Date(tsms), 'ssl', respIp))
       .catch(() => l.info(`XXXXXXXXXXXXXX broalyzer.ssl no host for ${respIp} from db.getHostForIp`));
@@ -229,12 +250,6 @@ broHandlers.ssl = group => {
       .then(() => updateDb(origIp, host, new Date(tsms), 'ssl', respIp));
   }
   return Promise.resolve();
-  //console.log('>>>', host || 'null server_name resp_h: ', respIp);
-  // let pts = null;
-  // group.forEach(x => {
-  //   console.log(uid, x.broType, (x.ts - pts)+'s');
-  //   pts = x.ts;
-  // });
 };
 
 const updateDb = (ip, host, date, source, hostIp) => db.ipToMac(ip)
