@@ -50,7 +50,8 @@ class HostSearch extends Component {
     sortField: 'host',
     sortDir: 1,
     skip: 0,
-    limit: 50
+    limit: 50,
+    hostSearch: undefined
   };
 
   handlePageChange(skip) {
@@ -65,8 +66,18 @@ class HostSearch extends Component {
     this.setState({ 'sortField': sortBy, sortDir: fToD[sortBy]});
   }
 
+  handleSearch(hostSearch) {
+    this.setState({ hostSearch: hostSearch.length ? hostSearch : undefined });
+  }
+
   render() {
     return (
+    <Style>
+      <SearchControls 
+        {...this.state}    
+        onSearch={this.handleSearch.bind(this)}            
+        onSort={this.handleSort.bind(this)}
+      />
       <Query 
         query={REMOTE_HOSTS_PAGE} 
         variables={this.state} 
@@ -75,11 +86,7 @@ class HostSearch extends Component {
           if (loading) return `Loading...`;
           if (error) return `Error! ${error.message}`;
           return (
-            <Style>
-              <SearchControls 
-                {...this.state}                
-                onSort={this.handleSort.bind(this)}
-              />
+            <div>
               <SearchResults 
                 {...remoteHostsPage}
                 {...this.state} 
@@ -89,21 +96,38 @@ class HostSearch extends Component {
                 {...this.state}
                 onChange={this.handlePageChange.bind(this)}  
               />
-            </Style>
+            </div>
           );
         }}
       </Query>
+    </Style>
     );
   }
 }
 
-const SearchControls = p => (
-  <SearchControlsStyle>
-    <Input action={{ icon: 'search' }} placeholder='Search...' />
-    <FilterControl {...p} />
-    <SortControl {...p} />
-  </SearchControlsStyle>
-);
+class SearchControls extends Component {
+  handleKeyDown(e) {
+    e.keyCode == 13 && this.search();
+  }
+  handleClick(e) {
+    this.search();
+  }
+  search() {
+    this.props.onSearch(this.inputRef.inputRef.value);
+  }
+  render() { return (
+    <SearchControlsStyle>
+      <Input 
+        ref={x => this.inputRef = x}
+        action={{ icon: 'search', onClick: this.search.bind(this) }} 
+        placeholder='Search...' 
+        onKeyDown={this.handleKeyDown.bind(this)}
+      />
+      <FilterControl {...this.props} />
+      <SortControl {...this.props} />
+    </SearchControlsStyle>
+  );}
+}
 
 const FilterControl = p => (
   <Query query={DEVICES}> 

@@ -276,20 +276,26 @@ module.exports.getHostForIp = ip => new Promise((res, rej) => {
   });
 });
 
-module.exports.getRemoteHostsPage = (sortField, sortDir, skip, limit) => new Promise((res, rej) => {
-  getRemoteHosts(sortField, sortDir, skip, limit)
+const strToRegex = str => new RegExp(str.replace(/[^0-9a-z-.]/g, '').replace('.', '\\.'));
+
+module.exports.getRemoteHostsPage = (sortField, sortDir, skip, limit, hostSearch) => new Promise((res, rej) => {
+  const search = {};
+  hostSearch && (search.host = strToRegex(hostSearch));
+  getRemoteHosts(sortField, sortDir, skip, limit, hostSearch)
     .then(hosts => {
-      db.remoteHosts.count({}, (e, count) => res({
+      db.remoteHosts.count(search, (e, count) => res({
         hosts: hosts,
         count: count
       }));
     });
 });
 
-const getRemoteHosts = module.exports.getRemoteHosts = (sortField, sortDir, skip, limit) => new Promise((res, rej) => {
+const getRemoteHosts = module.exports.getRemoteHosts = (sortField, sortDir, skip, limit, hostSearch) => new Promise((res, rej) => {
+  const search = {};
+  hostSearch && (search.host = strToRegex(hostSearch));
   let sort = {};
   sortField && (sort[sortField] = sortDir) || (sort.latestHit = -1);
-  db.remoteHosts.find({}, {})
+  db.remoteHosts.find(search, {})
     .sort(sort)
     .skip(skip||0)
     .limit(limit||30)

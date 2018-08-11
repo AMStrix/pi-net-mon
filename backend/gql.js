@@ -133,8 +133,8 @@ let schema = buildSchema(`
     devices: [Device]
     device(mac: String!): Device
     spoofStatus: SpoofStatus
-    remoteHosts(sortField: String, sortDir: Int, skip: Int, limit: Int): [RemoteHost]
-    remoteHostsPage(sortField: String, sortDir: Int, skip: Int, limit: Int): RemoteHostsPage
+    remoteHosts(sortField: String, sortDir: Int, skip: Int, limit: Int, hostSearch: String): [RemoteHost]
+    remoteHostsPage(sortField: String, sortDir: Int, skip: Int, limit: Int, hostSearch: String): RemoteHostsPage
     allHostHits24hr(date: Date!): String
     deviceHits24hr(mac: String!, date: Date!): String
     threatFeeds: [Feed]
@@ -214,11 +214,11 @@ let root = {
   broStatus: bro.getState,
   status: status,
   spoofStatus: () => spoof.state,
-  remoteHosts: ({sortField, sortDir, skip, limit}) => 
-    db.getRemoteHosts(sortField, sortDir, skip, limit)
+  remoteHosts: ({sortField, sortDir, skip, limit, hostSearch}) => 
+    db.getRemoteHosts(sortField, sortDir, skip, limit, hostSearch)
     .then(hostsToGql),
-  remoteHostsPage: ({sortField, sortDir, skip, limit}) => 
-    db.getRemoteHostsPage(sortField, sortDir, skip, limit)
+  remoteHostsPage: ({sortField, sortDir, skip, limit, hostSearch}) => 
+    db.getRemoteHostsPage(sortField, sortDir, skip, limit, hostSearch)
     .then(x => {
       x.hosts = hostsToGql(x.hosts);
       return x;
