@@ -1,12 +1,13 @@
 import React, { Component } from "react";
 import { Query, Mutation } from 'react-apollo';
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { Header, Icon, Dropdown, Pagination, Input } from 'semantic-ui-react';
 import moment from 'moment';
 import _ from 'lodash';
 
 import { REMOTE_HOSTS_PAGE, DEVICES } from './gql';
-import { grayText } from '../colors';
+import { lightBlue, grayText } from '../colors';
 
 const Style = styled.div`
   margin: 16px;
@@ -51,7 +52,8 @@ class HostSearch extends Component {
     sortDir: 1,
     skip: 0,
     limit: 50,
-    hostSearch: undefined
+    hostSearch: undefined,
+    filter: undefined
   };
 
   handlePageChange(skip) {
@@ -70,6 +72,10 @@ class HostSearch extends Component {
     this.setState({ hostSearch: hostSearch.length ? hostSearch : undefined });
   }
 
+  handleFilter(mac) {
+    this.setState({ filter: mac });
+  }
+
   render() {
     return (
     <Style>
@@ -77,6 +83,7 @@ class HostSearch extends Component {
         {...this.state}    
         onSearch={this.handleSearch.bind(this)}            
         onSort={this.handleSort.bind(this)}
+        onFilter={this.handleFilter.bind(this)}
       />
       <Query 
         query={REMOTE_HOSTS_PAGE} 
@@ -134,20 +141,22 @@ const FilterControl = p => (
     {({loading, error, data: {devices}}) => {
       if (loading) return null;
       const sortedDevices = _.sortBy(devices, ['name', 'mac']);
+      const filteredDev = _.find(devices, { mac: p.filter });
+      const disp = filteredDev && (filteredDev.name||filteredDev.mac) || 'Device filter';
+      const options = sortedDevices.map(d => ({
+        key: d.mac,
+        text: d.name || d.mac,
+        value: d.mac,
+        content: d.name || d.mac
+      }));
       return (
         <Dropdown 
-          text='Filter' 
+          text={disp} 
           icon='filter' 
-        >
-          <Dropdown.Menu>
-            <Dropdown.Header icon='hdd' content='filter by device' />
-            <Dropdown.Menu scrolling>
-              {sortedDevices
-                .map(dev => <Dropdown.Item key={dev.mac} text={dev.name||dev.mac} />)
-              }
-            </Dropdown.Menu>
-          </Dropdown.Menu>
-        </Dropdown>
+          onChange={(e, o) => p.onFilter(o.value)}
+          options={options}
+          scrolling
+        />
       )
     }}
   </Query>
@@ -167,10 +176,10 @@ const sortOptions = [
     content: 'Date'
   }
 ];
-
+const sortKeyToDisp = k => _.find(sortOptions, { value: k }).content;
 const SortControl = p => (
   <Dropdown 
-    text={'Sort by: ' + p.sortField} 
+    text={sortKeyToDisp(p.sortField)} 
     icon='sort'
     options={sortOptions}
     defaultValue={sortOptions[0].value}
@@ -210,7 +219,9 @@ const Item = h => (
     <div className='host'>{h.host}</div>
     <div className='sub'>
       <div className='latest'>{fmtLatest(h.latestHit)}</div>
-      <div className='device'>{h.latestDeviceName || h.latestMac}</div>
+      <div className='device'>
+        <Link to={'/devices/'+h.latestMac} >{h.latestDeviceName||h.latestMac}</Link>
+      </div>
     </div>
   </div>
 );

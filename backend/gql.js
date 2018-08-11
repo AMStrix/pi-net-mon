@@ -133,8 +133,8 @@ let schema = buildSchema(`
     devices: [Device]
     device(mac: String!): Device
     spoofStatus: SpoofStatus
-    remoteHosts(sortField: String, sortDir: Int, skip: Int, limit: Int, hostSearch: String): [RemoteHost]
-    remoteHostsPage(sortField: String, sortDir: Int, skip: Int, limit: Int, hostSearch: String): RemoteHostsPage
+    remoteHosts(sortField: String, sortDir: Int, skip: Int, limit: Int, hostSearch: String, filter: String): [RemoteHost]
+    remoteHostsPage(sortField: String, sortDir: Int, skip: Int, limit: Int, hostSearch: String, filter: String): RemoteHostsPage
     allHostHits24hr(date: Date!): String
     deviceHits24hr(mac: String!, date: Date!): String
     threatFeeds: [Feed]
@@ -214,11 +214,11 @@ let root = {
   broStatus: bro.getState,
   status: status,
   spoofStatus: () => spoof.state,
-  remoteHosts: ({sortField, sortDir, skip, limit, hostSearch}) => 
-    db.getRemoteHosts(sortField, sortDir, skip, limit, hostSearch)
+  remoteHosts: ({sortField, sortDir, skip, limit, hostSearch, filter}) => 
+    db.getRemoteHosts(sortField, sortDir, skip, limit, hostSearch, filter)
     .then(hostsToGql),
-  remoteHostsPage: ({sortField, sortDir, skip, limit, hostSearch}) => 
-    db.getRemoteHostsPage(sortField, sortDir, skip, limit, hostSearch)
+  remoteHostsPage: ({sortField, sortDir, skip, limit, hostSearch, filter}) => 
+    db.getRemoteHostsPage(sortField, sortDir, skip, limit, hostSearch, filter)
     .then(x => {
       x.hosts = hostsToGql(x.hosts);
       return x;

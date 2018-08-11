@@ -278,10 +278,11 @@ module.exports.getHostForIp = ip => new Promise((res, rej) => {
 
 const strToRegex = str => new RegExp(str.replace(/[^0-9a-z-.]/g, '').replace('.', '\\.'));
 
-module.exports.getRemoteHostsPage = (sortField, sortDir, skip, limit, hostSearch) => new Promise((res, rej) => {
+module.exports.getRemoteHostsPage = (sortField, sortDir, skip, limit, hostSearch, filter) => new Promise((res, rej) => {
   const search = {};
   hostSearch && (search.host = strToRegex(hostSearch));
-  getRemoteHosts(sortField, sortDir, skip, limit, hostSearch)
+  filter && (search.macs = { $in: [ filter ] });
+  getRemoteHosts(sortField, sortDir, skip, limit, hostSearch, filter)
     .then(hosts => {
       db.remoteHosts.count(search, (e, count) => res({
         hosts: hosts,
@@ -290,9 +291,10 @@ module.exports.getRemoteHostsPage = (sortField, sortDir, skip, limit, hostSearch
     });
 });
 
-const getRemoteHosts = module.exports.getRemoteHosts = (sortField, sortDir, skip, limit, hostSearch) => new Promise((res, rej) => {
+const getRemoteHosts = module.exports.getRemoteHosts = (sortField, sortDir, skip, limit, hostSearch, filter) => new Promise((res, rej) => {
   const search = {};
   hostSearch && (search.host = strToRegex(hostSearch));
+  filter && (search.macs = { $in: [ filter ] });
   let sort = {};
   sortField && (sort[sortField] = sortDir) || (sort.latestHit = -1);
   db.remoteHosts.find(search, {})

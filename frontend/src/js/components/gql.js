@@ -90,8 +90,8 @@ export const ACTIVE_HOSTS = gql`
 `;
 
 export const REMOTE_HOSTS = gql`
-  query remoteHosts($sortField: String, $sortDir: Int, $skip: Int, $limit: Int, $hostSearch: String) {
-    remoteHosts(sortField: $sortField, sortDir: $sortDir, skip: $skip, limit: $limit, hostSearch: $hostSearch) {
+  query remoteHosts($sortField: String, $sortDir: Int, $skip: Int, $limit: Int, $hostSearch: String, $filter: String) {
+    remoteHosts(sortField: $sortField, sortDir: $sortDir, skip: $skip, limit: $limit, hostSearch: $hostSearch, filter: $filter) {
       id
       host
       birthday
@@ -108,8 +108,8 @@ export const REMOTE_HOSTS = gql`
 `;
 
 export const REMOTE_HOSTS_PAGE = gql`
-  query remoteHostsPage($sortField: String, $sortDir: Int, $skip: Int, $limit: Int, $hostSearch: String) {
-    remoteHostsPage(sortField: $sortField, sortDir: $sortDir, skip: $skip, limit: $limit, hostSearch: $hostSearch) {
+  query remoteHostsPage($sortField: String, $sortDir: Int, $skip: Int, $limit: Int, $hostSearch: String, $filter: String) {
+    remoteHostsPage(sortField: $sortField, sortDir: $sortDir, skip: $skip, limit: $limit, hostSearch: $hostSearch, filter: $filter) {
       count
       hosts {
         id
