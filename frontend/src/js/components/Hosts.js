@@ -5,6 +5,7 @@ import moment from 'moment';
 
 import Grid from './Grid';
 import HostSearch from './HostSearch';
+import Host from './Host';
 
 const Style = styled.div`
   width: 100%;
@@ -12,7 +13,7 @@ const Style = styled.div`
 
 const Hosts = ({ match: { url }}) => (
     <Switch>
-      {/*<Route path={url + '/:host'} component={Host} />*/}
+      <Route path={url + '/:host' } component={Host} />
       <Route 
         path={url} 
         exact={true} 

@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Query, Mutation } from 'react-apollo';
-import { Link } from 'react-router-dom';
+import { Link, Redirect } from 'react-router-dom';
 import styled from 'styled-components';
 import { Header, Icon, Dropdown, Pagination, Input } from 'semantic-ui-react';
 import moment from 'moment';
@@ -34,8 +34,20 @@ const ResultsStyle = styled.div`
     flex-grow: 1;
   }
   .item {
+    display: block;
+    color: black;
     margin-bottom: 10px;
     line-height: 1.2em;
+    :hover {
+      background: #eeeeee;
+      cursor: pointer;
+      .icon {
+        visibility: visible;
+      }
+    }
+    .icon {
+      visibility: hidden;
+    }
   }
   .device, .latest {
     display: inline-block;
@@ -207,24 +219,33 @@ const fmtLatest = date => moment(date).format('YYYY/M/D H:mm');
 const SearchResults = p => (
   <ResultsStyle>
     <div className='col'>
-      {_.take(p.hosts, p.limit/2).map(Item)}
+      {_.take(p.hosts, p.limit/2).map(h => <Item key={h.host} {...h} />)}
     </div>
     <div className='col'>
-      {_.drop(p.hosts, p.limit/2).map(Item)}
+      {_.drop(p.hosts, p.limit/2).map(h => <Item key={h.host} {...h} />)}
     </div>
   </ResultsStyle>
 );
 
-const Item = h => (
-  <div key={h.host} className='item'>
-    <div className='host'>{h.host}</div>
-    <div className='sub'>
-      <div className='latest'>{fmtLatest(h.latestHit)}</div>
-      <div className='device'>
-        <Link to={'/devices/'+h.latestMac} >{h.latestDeviceName||h.latestMac}</Link>
-      </div>
-    </div>
-  </div>
-);
+class Item extends Component {
+  state = {}
+  render() {
+    if (this.state.redirect) return <Redirect push to={this.state.redirect} />;
+    return (
+      <div onClick={() => this.setState({ redirect: '/hosts/' + this.props.host })} className='item'>
+        <div className='host'>
+          {this.props.host}
+          <Icon className='icon' name='angle right' />
+        </div>
+        <div className='sub'>
+          <div className='latest'>{fmtLatest(this.props.latestHit)}</div>
+          <div className='device'>
+            <Link to={'/devices/'+this.props.latestMac} >{this.props.latestDeviceName||this.props.latestMac}</Link>
+          </div>
+        </div>
+      </div> 
+    );   
+  }
+}
 
 export default HostSearch;
