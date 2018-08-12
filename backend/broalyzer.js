@@ -222,7 +222,8 @@ broHandlers.http = group => {
     l.info(`XXXXXXXXXXXXXX broalyser.http did not see a host for ${respIp} (http)`);
     return db.getHostForIp(respIp)
       .then(hostFromDb => udpateDb(origIp, hostFromDb, new Date(tsms), 'http', respIp))
-      .catch(() => l.info(`XXXXXXXXXXXXXX broalyzer.http no host for ${respIp} from db.getHostForIp`));
+      .catch(() => l.info(`XXXXXXXXXXXXXX broalyzer.http no host for ${respIp} from db.getHostForIp`))
+      .then(() => updateDb(origIp, respIp, new Date(tsms), 'http')); // set host to ip
   } else {
     return updateTree(origIp, host, new Date(tsms), 'http', uid)
       .then(() => db.addIpToHost(respIp, host, new Date(tsms)))
@@ -243,7 +244,8 @@ broHandlers.ssl = group => {
     l.info(`XXXXXXXXXXXXXX broalyser.ssl did not see a host for ${respIp} (ssl)`);
     return db.getHostForIp(respIp)
       .then(hostFromDb => udpateDb(origIp, hostFromDb, new Date(tsms), 'ssl', respIp))
-      .catch(() => l.info(`XXXXXXXXXXXXXX broalyzer.ssl no host for ${respIp} from db.getHostForIp`));
+      .catch(() => l.info(`XXXXXXXXXXXXXX broalyzer.ssl no host for ${respIp} from db.getHostForIp`))
+      .then(() => updateDb(origIp, respIp, new Date(tsms), 'ssl')); // set host to ip
   } else {
     return updateTree(origIp, host, new Date(tsms), 'ssl', uid)
       .then(() => db.addIpToHost(respIp, host, new Date(tsms)))
