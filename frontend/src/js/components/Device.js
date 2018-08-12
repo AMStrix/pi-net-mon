@@ -56,9 +56,12 @@ let deviceNameTrigger = null;
 const Device = ({ match: { params: { mac }}}) => (
   <Style>
     <Query query={DEVICE} variables={{ mac: mac }}>
-      {({loading, error, data: {device, spoofStatus}}) => {
+      {({loading, error, data}) => {
         if (loading) return 'Loading...';
         if (error) return `Error! ${error.message}`;
+        if (!device) return `Device ${mac} not found.`;
+        console.log('device', device);
+        const {device, spoofStatus} = data;
         return (
           <div>
 

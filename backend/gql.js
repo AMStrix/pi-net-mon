@@ -165,6 +165,7 @@ function devicesToGql(devices) {
 };
 
 function deviceToGql(d) {
+  if (!d) return null;
   d.beingPortscanned = d.latestIp.ip === spoof.state.portScan.host;
   d.id = d.mac;
   d.ips && (d.ips = Object.values(d.ips));
