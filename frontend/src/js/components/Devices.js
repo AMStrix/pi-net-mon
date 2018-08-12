@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import { Button, Icon, Popup } from 'semantic-ui-react';
 import moment from 'moment';
 
-import { SPOOF_STATUS, SPOOF_DEVICE, DEVICES } from './gql';
+import { SPOOF_DEVICE, DEVICES } from './gql';
 import Grid from './Grid';
 import SlideLabel from './SlideLabel';
 import Seen from './Seen';
