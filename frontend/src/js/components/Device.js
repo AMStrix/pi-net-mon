@@ -59,9 +59,8 @@ const Device = ({ match: { params: { mac }}}) => (
       {({loading, error, data}) => {
         if (loading) return 'Loading...';
         if (error) return `Error! ${error.message}`;
-        if (!device) return `Device ${mac} not found.`;
-        console.log('device', device);
         const {device, spoofStatus} = data;
+        if (!device) return `Device ${mac} not found.`;
         return (
           <div>
 
