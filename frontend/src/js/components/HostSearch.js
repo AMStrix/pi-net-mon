@@ -55,11 +55,9 @@ class HostSearch extends Component {
     hostSearch: undefined,
     filter: undefined
   };
-
   handlePageChange(skip) {
     this.setState({ skip: skip });
   }
-
   handleSort(sortBy) {
     const fToD = {
       host: 1,
@@ -67,15 +65,13 @@ class HostSearch extends Component {
     }
     this.setState({ 'sortField': sortBy, sortDir: fToD[sortBy]});
   }
-
   handleSearch(hostSearch) {
     this.setState({ hostSearch: hostSearch.length ? hostSearch : undefined });
   }
-
   handleFilter(mac) {
+    mac == 'all' && (mac = undefined);
     this.setState({ filter: mac });
   }
-
   render() {
     return (
     <Style>
@@ -143,12 +139,17 @@ const FilterControl = p => (
       const sortedDevices = _.sortBy(devices, ['name', 'mac']);
       const filteredDev = _.find(devices, { mac: p.filter });
       const disp = filteredDev && (filteredDev.name||filteredDev.mac) || 'Device filter';
-      const options = sortedDevices.map(d => ({
+      const options = [{ 
+        key: 'all', 
+        text: 'All', 
+        value: 'all', 
+        content: 'All'
+      }].concat(sortedDevices.map(d => ({
         key: d.mac,
         text: d.name || d.mac,
         value: d.mac,
         content: d.name || d.mac
-      }));
+      })));
       return (
         <Dropdown 
           text={disp} 
