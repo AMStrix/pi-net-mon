@@ -58,7 +58,9 @@ module.exports = {
     publicPath: '/',
   },
   devServer: {
-      historyApiFallback: true, 
+      historyApiFallback: {
+        disableDotRule: true,
+      }, 
       proxy: {
         '/graphql': {
           // onProxyReq: (preq, req, res) => {
