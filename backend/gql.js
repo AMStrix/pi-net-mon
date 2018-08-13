@@ -98,11 +98,12 @@ let schema = buildSchema(`
     latestHit: Date
     latestMac: String
     latestDeviceName: String
-    assocHost: [String]
+    assocHosts: [String]
     sources: [String]
     protocols: [String]
     services: [String]
     macs: [String]
+    devices: [Device]
     hits: String
   }
   type Feed {
@@ -133,6 +134,7 @@ let schema = buildSchema(`
     devices: [Device]
     device(mac: String!): Device
     spoofStatus: SpoofStatus
+    remoteHost(host: String!): RemoteHost
     remoteHosts(sortField: String, sortDir: Int, skip: Int, limit: Int, hostSearch: String, filter: String): [RemoteHost]
     remoteHostsPage(sortField: String, sortDir: Int, skip: Int, limit: Int, hostSearch: String, filter: String): RemoteHostsPage
     allHostHits24hr(date: Date!): String
@@ -179,9 +181,15 @@ function hostsToGql(hs) {
 }
 
 function hostToGql(h) {
-  h.hits && (h.hits = JSON.stringify(h.hits));
   h.id = h.host;
   return h;
+}
+
+function populateHostDevices(h) {
+    return Promise
+      .all(h.macs.map(m => db.getDevice(m).then(deviceToGql)))
+      .then(devs => _.filter(devs, d => d ? true : false))
+      .then(devs => _.set(h, 'devices', devs));
 }
 
 function login({user, pass}, {session}) {
@@ -215,6 +223,9 @@ let root = {
   broStatus: bro.getState,
   status: status,
   spoofStatus: () => spoof.state,
+  remoteHost: ({host}) => db.getRemoteHost(host)
+    .then(hostToGql)
+    .then(populateHostDevices),
   remoteHosts: ({sortField, sortDir, skip, limit, hostSearch, filter}) => 
     db.getRemoteHosts(sortField, sortDir, skip, limit, hostSearch, filter)
     .then(hostsToGql),

@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import React, { Component } from 'react';
 import { Query } from 'react-apollo';
+import { Link } from 'react-router-dom';
 import { Icon } from 'semantic-ui-react';
 import styled from 'styled-components';
 import { 
@@ -91,7 +92,7 @@ const DeviceHostChart = p => (
               .map((h, i) => (
                 <div key={h.h} className='pieHost'>
                   <Icon name='circle' style={{ color: chart[i]() }} />
-                  {h.h} {h.v}
+                    <Link to={'/hosts/' + h.h}>{h.h}</Link> {h.v}
                 </div>
               ))
           }

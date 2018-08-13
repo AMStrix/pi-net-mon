@@ -39,7 +39,7 @@ Object.keys(INDEXES).forEach(dbn => {
     { fieldName: INDEXES[dbn], unique: true },
     e => e && l.error(`db.js problem indexing ${dbn}.db : ${'\n'+e.stack}`)
   );
-  //db[dbn].persistence.setAutocompactionInterval(1000*60*30);
+  db[dbn].persistence.setAutocompactionInterval(1000*60*30);
   db[dbn].on('compaction.done', () =>  l.info(`db.js ${dbn} compaction done`));
 });
 
@@ -263,6 +263,7 @@ module.exports.addIpToHost = (ip, host, time) => new Promise((res, rej) => {
   db.ipToHost.update(
     { ip: ip }, 
     { ip: ip, host: host, time: time },
+    { upsert: true },
     (e, reps, upserted) => {
       e && l.error(`db.addIpToHost ${ip} -> ${host} error: ${'\n'+e}`);
       res();
@@ -307,6 +308,13 @@ const getRemoteHosts = module.exports.getRemoteHosts = (sortField, sortDir, skip
         macToName(d.latestMac).then(n => _.set(d, 'latestDeviceName', n))
       )).then(res);
     })
+});
+
+module.exports.getRemoteHost = h => new Promise((res, rej) => {
+  db.remoteHosts.findOne({ host: h }, {}, (e, d) => {
+    e && l.error(`db.getRemoteHost(${h}) error: ${e}`);
+    res(d);
+  })
 });
 
 //db.remoteHosts.update({}, { $unset: { hits: true, hitsSum: true } }, { multi: true }, (a,b) => console.log('$unset',a,b));

@@ -1,7 +1,6 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import { graphql, Query, Mutation } from 'react-apollo';
-import gql from 'graphql-tag';
 import { Icon, Checkbox, Popup } from 'semantic-ui-react';
 import styled from 'styled-components';
 import moment from 'moment';

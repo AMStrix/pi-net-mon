@@ -79,14 +79,31 @@ export const SPOOF_DEVICE = gql`
   ${FULL_DEVICE}
 `;
 
-export const ACTIVE_HOSTS = gql`
-  query activeHosts($period: String) {
-    activeHosts(period: $period) {
-      id
-      host
-      hits
+export const FULL_REMOTE_HOST = gql`
+  fragment FullRemoteHost on RemoteHost { 
+    id
+    host
+    birthday
+    latestHit
+    latestMac
+    latestDeviceName
+    assocHosts
+    sources
+    protocols
+    services
+    macs
+    devices {...FullDevice}
+  }
+  ${FULL_DEVICE}
+`;
+
+export const REMOTE_HOST = gql`
+  query remoteHost($host: String!) {
+    remoteHost(host: $host) {
+      ...FullRemoteHost
     }
   }
+  ${FULL_REMOTE_HOST}
 `;
 
 export const REMOTE_HOSTS = gql`
@@ -98,7 +115,7 @@ export const REMOTE_HOSTS = gql`
       latestHit
       latestMac
       latestDeviceName
-      assocHost
+      assocHosts
       sources
       protocols
       services
@@ -118,7 +135,7 @@ export const REMOTE_HOSTS_PAGE = gql`
         latestHit
         latestMac
         latestDeviceName
-        assocHost
+        assocHosts
         sources
         protocols
         services
