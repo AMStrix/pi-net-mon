@@ -205,7 +205,7 @@ broHandlers.dns = group => {
   if (port == 53 && host) {
     l.verbose(`bro dns > ${origIp} ${host} (${respIp})`);
     return updateTree(origIp, host, new Date(tsms), 'dns', uid)
-      .then(() => updateDb(origIp, host, new Date(tsms), 'dns', respIp));
+      .then(() => updateDb(origIp, host, new Date(tsms), 'dns'));
   }
   return Promise.resolve();
 };
