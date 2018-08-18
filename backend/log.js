@@ -11,7 +11,7 @@ const log = winston.createLogger({
   level: isProduction && 'warn' || 'verbose',
   format: format,
   transports: [
-    new winston.transports.File({ filename: 'logs/verbose.log', level: 'verbose' }),
+    //new winston.transports.File({ filename: 'logs/verbose.log', level: 'verbose' }),
     new winston.transports.File({ filename: 'logs/error.log', level: 'error' })
   ]
 });

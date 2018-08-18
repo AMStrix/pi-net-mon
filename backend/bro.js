@@ -85,7 +85,6 @@ function watch(eventSource, path) {
   watching[eventSource].on('line', d => handleFilechange(eventSource, d));
   watching[eventSource].on('error', e => {
     touch(path);
-    l.error('bro.js watch bro log file error: ' + JSON.stringify(e, null, 2));
     watching[eventSource].unwatch();
     watching[eventSource].watch();
   });
