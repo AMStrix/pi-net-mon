@@ -158,8 +158,9 @@ function watchEventsByUidBuffer() {
   _.values(eventsByUid).forEach((events) => {
     // here we assume all bro events with same uid happen within given duration
     const {uid, broType, service, proto, buffAt} = events[0];
-    if (Date.now() - buffAt > 5000) {
-      l.debug(`watchEventsByUid del&proc ${broType}/${service||proto}:${uid}`);
+    const hasConn = _.find(events, { broType: 'conn' });
+    if (Date.now() - buffAt > 5000 && hasConn) {
+      l.debug(`watchEventsByUid del&proc ${events.map(x => x.broType)}/${service||proto}:${uid}`);
       processBroResultByUid(events);
       delete eventsByUid[uid];
     }
@@ -188,8 +189,14 @@ const broHandlerAll = group => {
   })
 };
 
+const extractMacFromGroup = group => {
+  const conn = _.find(group, 'orig_l2_addr');
+  return conn.orig_l2_addr.toUpperCase();
+};
+
 broHandlers.dns = group => {
   const uid = group[0].uid;
+  const mac = extractMacFromGroup(group);
   const tsms = group[0].ts * 1000;
   const host = (_.find(group, 'query')||{}).query;
   group.sort((a,b) => a.ts - b.ts);
@@ -203,70 +210,70 @@ broHandlers.dns = group => {
   const respIp = group[0]['id.resp_h'];
   const port = group[0]['id.resp_p'];
   if (port == 53 && host) {
-    l.verbose(`bro dns > ${origIp} ${host} (${respIp})`);
-    return updateTree(origIp, host, new Date(tsms), 'dns', uid)
-      .then(() => updateDb(origIp, host, new Date(tsms), 'dns'));
+    l.verbose(`bro dns > ${origIp}/${mac} ${host} (${respIp})`);
+    return updateTree(mac, origIp, host, new Date(tsms), 'dns', uid)
+      .then(() => updateDb(mac, origIp, host, new Date(tsms), 'dns'));
   }
   return Promise.resolve();
 };
 
 broHandlers.http = group => {
   const uid = group[0].uid;
+  const mac = extractMacFromGroup(group);
   group.sort((a,b) => a.ts - b.ts);
   const tsms = group[0].ts * 1000;
   const origIp = group[0]['id.orig_h'];
   const respIp = group[0]['id.resp_h'];
   let host = _.get(_.find(group, 'host'), 'host');
-  l.verbose(`bro http > ${origIp} ${host} (${respIp})`);
+  l.verbose(`bro http > ${origIp}/${mac} ${host} (${respIp})`);
   if (!host) { 
     l.info(`XXXXXXXXXXXXXX broalyser.http did not see a host for ${respIp} (http)`);
     return db.getHostForIp(respIp)
       .then(hostFromDb => udpateDb(origIp, hostFromDb, new Date(tsms), 'http', respIp))
       .catch(() => l.info(`XXXXXXXXXXXXXX broalyzer.http no host for ${respIp} from db.getHostForIp`))
-      .then(() => updateDb(origIp, respIp, new Date(tsms), 'http')); // set host to ip
+      .then(() => updateDb(mac, origIp, respIp, new Date(tsms), 'http')); // set host to ip
   } else {
-    return updateTree(origIp, host, new Date(tsms), 'http', uid)
+    return updateTree(mac, origIp, host, new Date(tsms), 'http', uid)
       .then(() => db.addIpToHost(respIp, host, new Date(tsms)))
-      .then(() => updateDb(origIp, host, new Date(tsms), 'http', respIp));
+      .then(() => updateDb(mac, origIp, host, new Date(tsms), 'http', respIp));
   }
   return Promise.resolve();
 };
 
 broHandlers.ssl = group => {
   const uid = group[0].uid;
+  const mac = extractMacFromGroup(group);
   group.sort((a,b) => a.ts - b.ts);
   const tsms = group[0].ts * 1000;
   const origIp = group[0]['id.orig_h'];
   const respIp = group[0]['id.resp_h'];
   let host = _.get(_.find(group, 'server_name'), 'server_name');
-  l.verbose(`bro ssl > ${origIp} ${host} (${respIp})`);
+  l.verbose(`bro ssl > ${origIp}/${mac} ${host} (${respIp})`);
   if (!host) { 
     l.info(`XXXXXXXXXXXXXX broalyser.ssl did not see a host for ${respIp} (ssl)`);
     return db.getHostForIp(respIp)
       .then(hostFromDb => udpateDb(origIp, hostFromDb, new Date(tsms), 'ssl', respIp))
       .catch(() => l.info(`XXXXXXXXXXXXXX broalyzer.ssl no host for ${respIp} from db.getHostForIp`))
-      .then(() => updateDb(origIp, respIp, new Date(tsms), 'ssl')); // set host to ip
+      .then(() => updateDb(mac, origIp, respIp, new Date(tsms), 'ssl')); // set host to ip
   } else {
-    return updateTree(origIp, host, new Date(tsms), 'ssl', uid)
+    return updateTree(mac, origIp, host, new Date(tsms), 'ssl', uid)
       .then(() => db.addIpToHost(respIp, host, new Date(tsms)))
-      .then(() => updateDb(origIp, host, new Date(tsms), 'ssl', respIp));
+      .then(() => updateDb(mac, origIp, host, new Date(tsms), 'ssl', respIp));
   }
   return Promise.resolve();
 };
 
-const updateDb = (ip, host, date, source, hostIp) => db.ipToMac(ip)
-  .then(mac => 
-    db.updateRemoteHostHit({
-      host: host,
-      latestHit: date,
-      latestMac: mac,
-      assocHost: hostIp,
-      source: source,
-      protocol: null,
-      service: null,
-      mac: mac
-    })
-  );
+const updateDb = (mac, ip, host, date, source, hostIp) => 
+  db.updateRemoteHostHit({
+    host: host,
+    latestHit: date,
+    latestMac: mac,
+    assocHost: hostIp,
+    source: source,
+    protocol: null,
+    service: null,
+    mac: mac
+  });
 
 
 const tree = {};
@@ -289,41 +296,38 @@ const makeHrPath = d =>
 const makeDayPath = d =>
   `y${d.getUTCFullYear()}.m${d.getUTCMonth()}.d${d.getUTCDate()}`;
 
-const updateTree = (ip, host, date, source, uid) => {
- return db.ipToMac(ip) 
-  .then(mac => {
+const updateTree = (mac, ip, host, date, source, uid) => new Promise((res, rej) => {
+  // time
+  const hrNode = setGetPath(tree, makeHrPath(date), { host: {}, device: {} });
 
-    // time
-    const hrNode = setGetPath(tree, makeHrPath(date), { host: {}, device: {} });
+  // time - dev
+  const hostNode = hrNode.host[host] = hrNode.host[host] || { hits: 0 };
+  hostNode.hits++;
 
-    // time - dev
-    const hostNode = hrNode.host[host] = hrNode.host[host] || { hits: 0 };
-    hostNode.hits++;
+  // time - dev - host
+  const hostDevNode = setGetPath(hostNode, 'device.'+mac, { uids: [], hits: 0 });
+  hostDevNode.hits++;
+  hostDevNode.uids.push(uid);
 
-    // time - dev - host
-    const hostDevNode = setGetPath(hostNode, 'device.'+mac, { uids: [], hits: 0 });
-    hostDevNode.hits++;
-    hostDevNode.uids.push(uid);
+  // time - dev - host - source
+  const hostDevSourceNode = setGetPath(hostDevNode, 'source.'+source, { hits: 0 });
+  hostDevSourceNode.hits++;
 
-    // time - dev - host - source
-    const hostDevSourceNode = setGetPath(hostDevNode, 'source.'+source, { hits: 0 });
-    hostDevSourceNode.hits++;
+  // time - host
+  const devNode = hrNode.device[mac] = hrNode.device[mac] || { hits: 0 };
+  devNode.hits++;
 
-    // time - host
-    const devNode = hrNode.device[mac] = hrNode.device[mac] || { hits: 0 };
-    devNode.hits++;
+  // time - host - dev 
+  const devHostNodeParent = setGetPath(devNode, 'host', {}); // hosts have dots, so extra step
+  const devHostNode = devHostNodeParent[host] = devHostNodeParent[host] || { uids: [], hits: 0 };
+  devHostNode.hits++;
+  devHostNode.uids.push(uid);
 
-    // time - host - dev 
-    const devHostNodeParent = setGetPath(devNode, 'host', {}); // hosts have dots, so extra step
-    const devHostNode = devHostNodeParent[host] = devHostNodeParent[host] || { uids: [], hits: 0 };
-    devHostNode.hits++;
-    devHostNode.uids.push(uid);
+  // time -host - dev - source
+  const devHostSourceNode = setGetPath(devHostNode, 'source.'+source, { hits: 0 });
+  devHostSourceNode.hits++;
+});
 
-    // time -host - dev - source
-    const devHostSourceNode = setGetPath(devHostNode, 'source.'+source, { hits: 0 });
-    devHostSourceNode.hits++;
-  })
-};
 
 const make24hrDates = toms => _.range(0, 25)
   .map(h => hoursAgo(h, toms))
