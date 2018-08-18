@@ -20,7 +20,8 @@ const state = {
 let deploying = false;
 
 function init() {
-  watchLogs();
+  cmdDeploy()
+    .then(() => watchLogs());
 }
 
 function addError(e) {
