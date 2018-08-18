@@ -137,6 +137,12 @@ const steps = [
     );
   }),
 
+  new InstallStep('Configure bro to output json', function() {
+    return this.shex(
+      'sudo bash -c \'echo "@load policy/protocols/conn/mac-logging" >> /opt/nsm/bro/share/bro/site/local.bro\'',
+      'error writing mac-logging config to bro/site/local.bro'
+    );
+  }),
 ];
 
 const promiseSerial = funcs =>
