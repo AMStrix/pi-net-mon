@@ -172,7 +172,8 @@ function portScan(forcedIp) {
 
 
 function spoofInit() {
-  f.cliSync('echo', ['1','>','/proc/sys/net/ipv4/ip_forward'])
+  //f.cliSync('echo', ['1','>','/proc/sys/net/ipv4/ip_forward'])
+  f.cliSync('sysctl', ['-w', 'net.ipv4.ip_forward=1']);
   if (process.getuid() !== 0) {
     throw new Error('spoofInit: Must be run as root!');
   }
