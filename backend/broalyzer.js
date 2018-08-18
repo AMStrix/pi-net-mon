@@ -326,6 +326,8 @@ const updateTree = (mac, ip, host, date, source, uid) => new Promise((res, rej) 
   // time -host - dev - source
   const devHostSourceNode = setGetPath(devHostNode, 'source.'+source, { hits: 0 });
   devHostSourceNode.hits++;
+
+  res();
 });
 
 
