@@ -1,5 +1,22 @@
-const HtmlWebPackPlugin = require("html-webpack-plugin");
+const path = require('path');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
 module.exports = {
+  entry: {
+    app: './src/index.js'
+  },
+  plugins: [
+    new CleanWebpackPlugin(['dist']),
+    new HtmlWebpackPlugin({
+      template: "./src/index.html",
+      filename: "./index.html"
+    })
+  ],
+  output: {
+    filename: '[name].bundle.js',
+    path: path.resolve(__dirname, 'dist')
+  },
   module: {
     rules: [
       {
@@ -47,31 +64,5 @@ module.exports = {
         },
       },
     ]
-  },
-  plugins: [
-    new HtmlWebPackPlugin({
-      template: "./src/index.html",
-      filename: "./index.html"
-    })
-  ],
-  output: {
-    publicPath: '/',
-  },
-  devServer: {
-      historyApiFallback: {
-        disableDotRule: true,
-      }, 
-      proxy: {
-        '/graphql': {
-          // onProxyReq: (preq, req, res) => {
-          //   console.log(res);
-          // },
-          target: 'http://pi-net-mon.local:4000',
-          // changeOrigin: true,
-          // secure: false,
-          // cookieDomainRewrite: 'localhost',
-          debug: true
-        }
-      }
   }
 };
