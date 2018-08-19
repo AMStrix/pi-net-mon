@@ -17,6 +17,8 @@ module.exports = {
   lightBlue: 'rgba(118,166,255,0.5)',
   orange: c('rgb(255, 122, 0)'),
   grayText: c('#888888'),
+  green: c('#008000'),
+  gray: c('#808080'),
   chart: [
     c('#063951'), // dk blue
     c('#c13019'), // red

@@ -1,18 +1,27 @@
 import React, { Component } from "react";
-import { Query, Mutation } from 'react-apollo';
-import gql from 'graphql-tag';
-import { Route, Switch, Redirect, Link } from 'react-router-dom';
+import { Query } from 'react-apollo';
+import { Route, Switch } from 'react-router-dom';
 import styled from 'styled-components';
-import { Button, Icon, Popup } from 'semantic-ui-react';
+import { Icon, Popup } from 'semantic-ui-react';
 import moment from 'moment';
+import _ from 'lodash';
 
-import { SPOOF_DEVICE, DEVICES } from './gql';
-import Grid from './Grid';
-import SlideLabel from './SlideLabel';
-import Seen from './Seen';
+import { gray } from '../colors';
+import { DEVICES } from './gql';
+import DeviceItem from './DeviceItem';
 import Device from './Device';
-import SpoofControl from './SpoofControl';
-import ScanControl from './ScanControl';
+
+const Style = styled.div`
+  margin: 8px 8px 0 8px;
+  flex-grow: 1;
+`;
+const SpoofStatusStyle = styled.div`
+  display: flex;
+  justify-content: space-around;
+  padding-bottom: 0.5em;
+  margin-bottom: 0.5em;
+  border-bottom: 1px solid ${gray.lighten(0.5)};
+`;
 
 function fmtDuration(ms) {
   if (ms < 1000) {
@@ -43,18 +52,15 @@ const Devices = ({ match: { url }}) => (
           {({ loading, error, data }) => {
             if (loading) return "Loading...";
             if (error) return `Error! ${error.message}`;
+            let sorted = _.sortBy(data.devices, ['name']).reverse();
+            sorted = _.sortBy(sorted, ['latestIp.seen']).reverse();
             return (
-              <Grid>
+              <Style>
                 <SpoofStatus {...data.spoofStatus}/>
-                {data.devices.map(d =>
-                  <DeviceSummary 
-                    key={d.mac} 
-                    {...d} 
-                    activeIp={data.spoofStatus.portScan.host}
-                    isScanning={data.spoofStatus.portScan.processing}
-                  />
+                {sorted.map(d =>
+                  <DeviceItem key={d.mac} {...d} />
                 )}
-              </Grid>
+              </Style>
             );
           }}
         </Query>
@@ -63,159 +69,23 @@ const Devices = ({ match: { url }}) => (
   </Switch>
 );
 
-
 const SpoofStatus = ({pingSweep, portScan}) => (
-    <Grid.Head>
-      <div>
-        <Icon name='target' disabled={!pingSweep.processing}/>
-        {pingSweep.processing ? 
-          `sweeping started ${fromNow(pingSweep.scanStart)}` :
-          `sweep: ${fromNow(pingSweep.scanStart)} / ${fmtDuration(pingSweep.scanTime||0)}` 
-        }
-      </div>
-      <div>
-        <Icon name='crosshairs' disabled={!portScan.processing}/>
-        {portScan.processing && portScan.scanStart ? 
-          `${portScan.host} portscan started ${moment(portScan.scanStart).from(new Date())}` :
-          `portscan: ${fromNow(portScan.scanStart)} / ${fmtDuration(portScan.scanTime||0)}` 
-        }
-      </div>
-    </Grid.Head>
-);
-
-
-class DeviceSummary extends Component {
-  state = { showPorts: false };
-  showPorts = () => this.setState({ showPorts: !this.state.showPorts });
-  hidePorts = () => this.setState({ showPorts: false });
-  render() {return renderDevice(this);}
-}
-
-const renderDevice = ({showPorts, hidePorts, state, props: p}) => {
-  let ip = p.latestIp.ip;
-  return (
-    <Grid.Item>
-      { state.showPorts && <PortsOverlay ports={p.ports} onHide={hidePorts} /> }
-      <div className='_top'>
-        { p.isSensor && 
-          <Popup 
-            trigger={<Icon name='eye' style={{float:'right'}} />} 
-            content='pi-net-mon sensor'
-          />
-        }
-        { p.isGateway && 
-          <Popup 
-            trigger={<Icon name='hdd' style={{float: 'right'}} />} 
-            content='gateway' 
-          />
-        }
-        { !p.isSensor && !p.isGateway && 
-          <Popup
-            trigger={<Icon name='asterisk' disabled={!p.isSpoof} style={{float: 'right'}} />}
-            content={p.isSpoof ? 'arp spoofing on' : 'arp spoofing off, not monitoring traffic'}
-          />
-        }
-        { <Link to={'/devices/' + p.mac} >{p.name||p.mac}</Link> }
-      </div>
-      <div className='_top'>
-        { p.beingPortscanned ? 
-          <SlideLabel
-            content={ip}
-            label={'portscanning...'}
-            color='#ff6c00'
-          /> : ip
-        } 
-        { p.ports && p.ports.length > 0 && 
-          <SlideLabel 
-            content={p.ports.length} 
-            label='open ports' 
-            float='right' 
-            color='#538eff'
-            onClick={showPorts}
-          /> 
-        }
-      </div>
-      <hr />
-      <div className='_middle' style={{ height: '60px' }} >
-        {p.vendor || '(no vendor discovered)'}<br/>
-        {p.os || '(os not detected)'}
-      </div>
-      <hr />
-      <div className='_bottom'>
-        <Seen when={p.latestIp.seen} tip='last time device was pinged/scanned' />
-        <ScanControl 
-          {...p} 
-          size='mini'
-          style={{ float: 'right' }}
-          errorContent={error =>
-            <NoticeOverlay content={
-              <span><Icon name='warning' />{ error }</span>
-            }/>
-        }/>
-        <SpoofControl 
-          device={p} 
-          type='button' 
-          style={{ float: 'right' }} 
-          errorContent={error => 
-            <NoticeOverlay content={
-              <span><Icon name='warning' />{ error }</span>
-            }/>
-        }/>
-      </div>
-    </Grid.Item>
-  );
-}
-
-const Overlay = ({onHide, children}) => (
-  <Grid.Overlay>
-    <Icon name='close' className='_close' onClick={onHide}/>
-    <div className='_scroll'>
-      { children }
+  <SpoofStatusStyle>
+    <div>
+      <Icon name='target' disabled={!pingSweep.processing}/>
+      {pingSweep.processing ? 
+        `sweeping started ${fromNow(pingSweep.scanStart)}` :
+        `sweep: ${fromNow(pingSweep.scanStart)} / ${fmtDuration(pingSweep.scanTime||0)}` 
+      }
     </div>
-  </Grid.Overlay>
+    <div>
+      <Icon name='crosshairs' disabled={!portScan.processing}/>
+      {portScan.processing && portScan.scanStart ? 
+        `${portScan.host} portscan started ${moment(portScan.scanStart).from(new Date())}` :
+        `portscan: ${fromNow(portScan.scanStart)} / ${fmtDuration(portScan.scanTime||0)}` 
+      }
+    </div>
+  </SpoofStatusStyle>
 );
-
-const PortsOverlay = ({ports, onHide}) => (
-  <Overlay onHide={onHide} >
-    <table style={{ fontSize: '0.8em' }}>
-      <thead><tr><th>port</th><th>service</th><th>seen</th></tr></thead>
-      <tbody>
-      {ports.map(port => (
-        <tr key={port.port}>
-          <td>{port.port}</td>
-          <td>{port.service}</td>
-          <td>{fromNow(port.seen)}</td>
-        </tr>
-      ))}
-      </tbody>
-    </table>
-  </Overlay>
-);
-
-class NoticeOverlay extends Component {
-  state = { show: true };
-  handleHide() {
-    this.setState({ show: false });
-  }
-  render() { 
-    const {content} = this.props;
-    if (!this.state.show) { return null; }
-    return (
-      <Overlay onHide={this.handleHide.bind(this)}>
-        <Grid.Overlay.Notice>
-          <div className='_content'><div>{content}</div></div>
-          <Button 
-            inverted
-            className='_controls' 
-            content='ok' 
-            size='mini' 
-            onClick={this.handleHide.bind(this)} 
-          />
-        </Grid.Overlay.Notice>
-      </Overlay>
-    );
-  }
-} 
-
 
 export default Devices;

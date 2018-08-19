@@ -9,7 +9,10 @@ import { grayText } from '../colors';
 const Style = styled.div`
   color: ${grayText};
   display: inline-block;
+  cursor: default;
   ${({margin}) => margin && `margin: ${margin};`}
+  ${({float}) => float && `float: ${float};`}
+  ${({size}) => size && size == 'smaller' && `font-size: 0.9em;`}
 `;
 
 
@@ -17,7 +20,7 @@ const Seen = p => {
   const {when, tip} = p;
   const render = p => (
     <span>
-      <Icon name='clock'/>
+      {/*<Icon name='clock'/>*/}
       { moment(when).from(new Date()) }
     </span>
   );
