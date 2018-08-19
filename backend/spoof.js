@@ -274,7 +274,7 @@ module.exports.start = () => {
   updateState();
   setInterval(updateState, 1000);
   pingSweep();
-  setInterval(pingSweep, 60 * 1000 * 20);
+  setInterval(pingSweep, 60 * 1000 * 5);
   portScanLoop();
   setInterval(portScanLoop, 60 * 1000);
   spoofLoop();
