@@ -202,10 +202,10 @@ function spoofLoop() {
     });
     // resolve ip changes
     _.values(spoofing).forEach(c => {
-      const inToSpoof = toSpoof[c._mac];
-      if (inToSpoof && inToSpoof.latestIp.ip != inToSpoof._ip) {
+      const inToSpoof = _.find(_.values(toSpoof), { mac: c._mac });
+      if (inToSpoof && inToSpoof.latestIp.ip != c._ip) {
         l.info(`spoof.spoofLoop ip change ${c._mac} ${c._ip} -> ${inToSpoof.latestIp.ip}`);
-        delete toSpoof[c._mac]; 
+        delete toSpoof[inToSpoof.latestIp.ip]; 
         rejects.push(inToSpoof);
       }
     });
