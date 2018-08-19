@@ -54,6 +54,7 @@ let schema = buildSchema(`
     isSensor: Boolean
     isGateway: Boolean
     isSpoof: Boolean
+    spoofConflict: Boolean
     lastPortscanTime: Date
     beingPortscanned: Boolean
   }
@@ -146,7 +147,7 @@ let schema = buildSchema(`
     createAdmin(user: String!, pass: String!): String
     login(user: String!, pass: String!): Status
     scan(ip: String!): ScanResult
-    spoofDevice(ip: String!, isSpoof: Boolean): SpoofResult
+    spoofDevice(mac: String!, isSpoof: Boolean): SpoofResult
     deployBro: BroStatus,
     nameDevice(mac: String!, name: String!): DeviceResult
     activateThreatFeed(id: String!, active: Boolean!): [Feed]
@@ -169,6 +170,7 @@ function devicesToGql(devices) {
 function deviceToGql(d) {
   if (!d) return null;
   d.beingPortscanned = d.latestIp.ip === spoof.state.portScan.host;
+  d.spoofConflict = spoof.state.spoofRejects[d.mac] || false;
   d.id = d.mac;
   d.ips && (d.ips = Object.values(d.ips));
   d.ports && (d.ports = Object.values(d.ports));
@@ -256,9 +258,9 @@ let root = {
         devices: devices
       })),
   deployBro: bro.deploy,
-  spoofDevice: ({ip, isSpoof}) => 
+  spoofDevice: ({mac, isSpoof}) => 
     Promise.resolve([])
-      .then(a => spoof.spoofDevice(ip, isSpoof).then(e => a.concat(e)))
+      .then(a => spoof.spoofDevice(mac, isSpoof).then(e => a.concat(e)))
       .then(a => db.getDevices().then(ds => a.concat([devicesToGql(ds)])))
       .then(([spoofErr, devices]) => ({
           spoofError: spoofErr,

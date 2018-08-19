@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { Button, Icon, Popup } from 'semantic-ui-react';
 import moment from 'moment';
 
-import { SPOOF_DEVICE, DEVICES } from './gql';
 import Seen from './Seen';
 import ScanControl from './ScanControl';
 import SpoofControl from './SpoofControl';
@@ -91,17 +90,19 @@ class DeviceItem extends Component {
 
 const Vendor = ({vendor}) => vendor || '(no vendor detected)';
 
-const Status = ({latestIp, isGateway, isSensor, isSpoof, beingPortscanned}) => {
+const Status = ({latestIp, isGateway, isSensor, isSpoof, beingPortscanned, spoofConflict}) => {
   const sinceSeen = Date.now() - (new Date(latestIp.seen)).getTime();
   let color = null;
   let tip = '';
   let special = null;
-  !isSpoof && (special = 'dont');
+  !isSpoof && (special = 'ban');
   isGateway && (special = 'hdd');
   isSensor && (special = 'eye');
+  spoofConflict && (special = 'exclamation circle');
   !isSpoof && (tip = 'not monitoring, ');
   isGateway && (tip = 'gateway: ');
   isSensor && (tip = 'pi-net-mon: ');
+  spoofConflict && (tip = 'ip conflict, not monitoring, ');
   if (sinceSeen > 1000 * 60 * 40) {
     color = gray.lighten(0.5);
     tip += 'offline';

@@ -4,7 +4,7 @@ import gql from 'graphql-tag';
 import styled from 'styled-components';
 import { Button, Checkbox } from 'semantic-ui-react';
 
-import { SPOOF_DEVICE, DEVICES, DEVICE } from './gql';
+import { SPOOF_DEVICE } from './gql';
 
 const Style = styled.div`
   display: inline-block;
@@ -29,7 +29,7 @@ const SpoofControl = ({
           size='mini' 
           loading={loading}
           disabled={loading}
-          onClick={() => spoofDevice({ variables: { ip: ip, isSpoof: !isSpoof } })} 
+          onClick={() => spoofDevice({ variables: { mac: mac, isSpoof: !isSpoof } })} 
         />
       }
       {type == 'toggle' &&
@@ -38,7 +38,7 @@ const SpoofControl = ({
           label='spoofing' 
           checked={isSpoof}
           disabled={isSensor||isGateway||loading}
-          onChange={x => spoofDevice({ variables: { ip: ip, isSpoof: !isSpoof } })}
+          onChange={x => spoofDevice({ variables: { mac: mac, isSpoof: !isSpoof } })}
         />
       }
       { data && 

@@ -27,6 +27,7 @@ export const FULL_DEVICE = gql`
     isSensor
     isGateway
     isSpoof
+    spoofConflict
     beingPortscanned
     lastPortscanTime
     latestIp { ip seen }
@@ -70,8 +71,8 @@ export const SCAN = gql`
 `;
 
 export const SPOOF_DEVICE = gql`
-  mutation spoofDevice($ip: String!, $isSpoof: Boolean) {
-    spoofDevice(ip: $ip, isSpoof: $isSpoof) {
+  mutation spoofDevice($mac: String!, $isSpoof: Boolean) {
+    spoofDevice(mac: $mac, isSpoof: $isSpoof) {
       devices {...FullDevice}
       spoofError
     }

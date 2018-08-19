@@ -192,21 +192,6 @@ module.exports.nameDevice = (mac, name) => new Promise((res, rej) => {
   });
 });
 
-module.exports.updateDeviceByIp = d => new Promise((res, rej) => {
-  if (!d.ip) { throw new Error('db.js updateDeviceByIp, must have ip! was: ', d); }
-  db.devices.findOne({ 'latestIp.ip': d.ip }, (e, old) => {
-    d.mac = old.mac;
-    db.devices.update(
-      { mac: old.mac }, 
-      makeDevice(d, old), 
-      { upsert: true }, 
-      (e, replacementCount, upserted) => {
-        e ? rej(e) : res()
-      }
-    );
-  })
-});
-
 module.exports.ipToMac = f.memoizePeriodic(ip => new Promise((res, rej) => 
   db.devices.find({ 'latestIp.ip': ip }, { mac: 1, 'latestIp.seen': 1 }, (err, ds) => {
     err && (console.log(`ipToMac(${ip}) error: `, err));

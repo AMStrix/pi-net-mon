@@ -28,9 +28,7 @@ let state = {
     scanTime: null,
     host: null
   },
-  spoofing: {
-
-  }
+  spoofRejects: {}
 };
 
 function addError(e) {
@@ -179,39 +177,71 @@ function spoofInit() {
   }
 }
 
-function spoofable(ip) {
-  return ip !== thisIp() && ip !== thisGateway() && !spoofing[ip];
+function spoofable(mac, ip) {
+  return ip !== thisIp() && ip !== thisGateway() && !spoofing[mac];
 }
 
 function spoofLoop() {
   db.getDevices({ isSpoof: true }).then(ds => {
-    ds.forEach(d => arpSpoof(d.latestIp.ip));
-    return ds.map(d => d.latestIp.ip);
-  }).then(spoofingIps => {
-    db.getDevices({ isSpoof: false, latestIp: { ip: { $nin: spoofingIps } } })
+    const toSpoof = {};
+    const rejects = [];
+    const ipChange = [];
+    // resolve stale ips
+    ds.forEach(d => {
+      const exist = toSpoof[d.latestIp.ip];
+      if (exist) {
+        if (exist.latestIp.seen < d.latestIp.seen) {
+          rejects.push(toSpoof[d.latestIp.ip]);
+          toSpoof[d.latestIp.ip] = d;
+        } else {
+          rejects.push(d);
+        }
+      } else {
+        toSpoof[d.latestIp.ip] = d;
+      }
+    });
+    // resolve ip changes
+    _.values(spoofing).forEach(c => {
+      const inToSpoof = toSpoof[c._mac];
+      if (inToSpoof && inToSpoof.latestIp.ip != inToSpoof._ip) {
+        l.info(`spoof.spoofLoop ip change ${c._mac} ${c._ip} -> ${inToSpoof.latestIp.ip}`);
+        delete toSpoof[c._mac]; 
+        rejects.push(inToSpoof);
+      }
+    });
+    _.values(toSpoof).forEach(d => arpSpoof(d.mac, d.latestIp.ip));
+    state.spoofRejects = rejects.reduce((a, d) => (a[d.mac] = true) && a, {});
+    l.debug(`spoof.spoofLoop spoofing ${_.values(toSpoof).map(d => d.mac).join(', ')}`);
+    l.debug(`spoof.spoofLoop rejects ${rejects.map(d => d.mac).join(', ')}`);
+    return rejects;
+  }).then(rejects => {
+    const kill = spoofChild => spoofChild && spoofChild.kill('SIGINT');
+    rejects.forEach(d => kill(spoofing[d.mac]));
+    db.getDevices({ isSpoof: false })
       .then(ds => {
-        const kill = spoofChild => spoofChild && spoofChild.kill('SIGINT');
-        ds.forEach(d => kill(spoofing[d.latestIp.ip]));
+        ds.forEach(d => kill(spoofing[d.mac]));
       });
   });
 }
 
-function arpSpoof(ip) {
+function arpSpoof(mac, ip) {
   if (ip === thisIp()) {
     throw Error('cannot spoof pi-net-mon sensor');
   } else if (ip === thisGateway()) {
     throw Error('cannot spoof gateway');
   }
-  if (!spoofable(ip)) { return; }
+  if (!spoofable(mac, ip)) { return; }
 
   let args = ['-i', 'eth0', '-t', ip, '-r', thisGateway()];
   let child = childProcess.spawn('arpspoof', args);
-  spoofing[ip] = child;
+  child._ip = ip;
+  child._mac = mac;
+  spoofing[mac] = child;
   child.stdout.on('data', d => l.debug(d));
   child.stderr.on('data', e => l.debug(e));
   child.on('close', x => {
     l.info(`CLOSE arpspoof ${ip} with code: ${x}`);
-    delete spoofing[ip]; // clear the child after close
+    delete spoofing[mac]; // clear the child after close
   });
   child.on('error', e => {
     l.error('arpSpoof ' + ip + JSON.stringify(e));
@@ -255,16 +285,15 @@ module.exports.scanIp = ip => {
   return portScan(ip);
 }
 
-module.exports.spoofDevice = (ip, isSpoof) => {
-  if (thisGateway() === ip) {
-    return Promise.resolve('cannot spoof gateway ' + ip);
-  }
-  if (thisIp() === ip) {
-    return Promise.resolve('cannot spoof pi-net-mon device' + ip);
-  }
-  return db.updateDeviceByIp({ ip: ip, isSpoof: isSpoof })
-    .then(x => spoofLoop() || null) // null is no-error
-}
+module.exports.spoofDevice = (mac, isSpoof) => db.getDevice(mac)
+  .then(d => {
+    const {mac, latestIp: {ip}} = d;
+    l.info(`spoof.spoofDevice ${mac} ${isSpoof}`);
+    if (thisGateway() === ip) return 'cannot spoof gateway ' + ip;
+    if (thisIp() === ip) return 'cannot spoof pi-net-mon device' + ip;
+    return db.updateDevice({ mac: mac, isSpoof: isSpoof })
+      .then(x => spoofLoop() || null) // null is no-error
+  });
 
 module.exports.onExit = cleanupArpSpoof;
 
