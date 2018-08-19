@@ -63,7 +63,13 @@ const ControlsStyle = styled.div`
 `;
 
 class DeviceItem extends Component {
-  state = {};
+  state = { now: new Date() };
+  componentDidMount() {
+    this.intervalId = setInterval(() => this.setState({ now: new Date() }), 10000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.intervalId);
+  }
   handleClick(e) {
     this.setState({ redirect: '/devices/' + this.props.mac });
   }

@@ -36,9 +36,9 @@ function fmtDuration(ms) {
   }
 }
 
-function fromNow(when) {
+function fromTime(when, to) {
   if (!when) { return 'never'; }
-  return moment(when).from(new Date());
+  return moment(when).from(to);
 }
 
 const Devices = ({ match: { url }}) => (
@@ -69,20 +69,31 @@ const Devices = ({ match: { url }}) => (
   </Switch>
 );
 
-const SpoofStatus = ({pingSweep, portScan}) => (
+class SpoofStatus extends Component {
+  state = { now: new Date() };
+  componentDidMount() {
+    this.intervalId = setInterval(() => this.setState({ now: new Date() }), 10000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.intervalId);
+  }
+  render() { return <RenderSpoofStatus {...this.props} {...this.state} />; }
+}
+
+const RenderSpoofStatus = ({pingSweep, portScan, now}) => (
   <SpoofStatusStyle>
     <div>
       <Icon name='target' disabled={!pingSweep.processing}/>
       {pingSweep.processing ? 
-        `sweeping started ${fromNow(pingSweep.scanStart)}` :
-        `sweep: ${fromNow(pingSweep.scanStart)} / ${fmtDuration(pingSweep.scanTime||0)}` 
+        `sweeping started ${fromTime(pingSweep.scanStart, now)}` :
+        `sweep: ${fromTime(pingSweep.scanStart, now)} / ${fmtDuration(pingSweep.scanTime||0)}` 
       }
     </div>
     <div>
       <Icon name='crosshairs' disabled={!portScan.processing}/>
       {portScan.processing && portScan.scanStart ? 
-        `${portScan.host} portscan started ${moment(portScan.scanStart).from(new Date())}` :
-        `portscan: ${fromNow(portScan.scanStart)} / ${fmtDuration(portScan.scanTime||0)}` 
+        `${portScan.host} portscan started ${fromTime(portScan.scanStart, now)}` :
+        `portscan: ${fromTime(portScan.scanStart, now)} / ${fmtDuration(portScan.scanTime||0)}` 
       }
     </div>
   </SpoofStatusStyle>
