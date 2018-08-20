@@ -88,6 +88,12 @@ module.exports.processDeviceHitsForChart = hitString => {
   }
 }
 
+const parseQueryValue = v => /^[-]?[\d]+$/.test(v) && parseInt(v, 10) || v;
+module.exports.parseQuery = qs => 
+  qs.replace('?', '')
+    .split('&')
+    .map(s => s.split('='))
+    .reduce((a, x) => (a[x[0]] = parseQueryValue(x[1])) && a, {})||{};
 
 
 

@@ -6,12 +6,13 @@ import moment from 'moment';
 import Grid from './Grid';
 import HostSearch from './HostSearch';
 import Host from './Host';
+import { parseQuery } from './util';
 
 const Style = styled.div`
   width: 100%;
 `;
 
-const Hosts = ({ match: { url }}) => (
+const Hosts = ({location: {search}, match: {url}}) => (
     <Switch>
       <Route path={url + '/:host' } component={Host} />
       <Route 
@@ -20,7 +21,7 @@ const Hosts = ({ match: { url }}) => (
         render={() => (
           <Grid>
             <Style>
-              <HostSearch />
+              <HostSearch query={parseQuery(search)} />
             </Style>
           </Grid>
         )} 

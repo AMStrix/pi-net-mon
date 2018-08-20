@@ -57,34 +57,101 @@ const ResultsStyle = styled.div`
   }
 `;
 
+const SORT_OPTIONS = [
+  { 
+    key: 'host',
+    text: 'Host Name',
+    value: 'host',
+    content: 'Host Name'
+  },
+  {
+    key: 'latestHit',
+    text: 'Latest Hit',
+    value: 'latestHit',
+    content: 'Latest Hit'
+  }
+];
+
+const DEFAULT_STATE = [
+  { k: 'sortField', v: 'host' },
+  { k: 'sortDir', v: 1 },
+  { k: 'skip', v: 0 },
+  { k: 'limit', v: 50 },
+  { k: 'hostSearch', v: undefined },
+  { k: 'filter', v: 'all' }
+];
+
+const stateToQuery = (state, mod) => {
+  const merged = Object.assign({}, state, mod);
+  const genKV = (arr, k, dv, sv) => {
+    (dv||sv) && arr.push(`${k}=${sv||dv}`);
+    return arr;
+  };
+  const qs = '?' + DEFAULT_STATE.reduce((a, x) => genKV(a, x.k, x.v, merged[x.k]), []).join('&');
+  return qs;
+};
+
+const queryToState = query => {
+  const state = DEFAULT_STATE.reduce((a, x) => {
+    a[x.k] = query[x.k] || x.v;
+    return a;
+  }, {});
+  return state;
+};
 
 class HostSearch extends Component {
   state = {
-    sortField: 'host',
-    sortDir: 1,
-    skip: 0,
-    limit: 50,
-    hostSearch: undefined,
-    filter: undefined
+    queryRedirect: undefined
   };
-  handlePageChange(skip) {
-    this.setState({ skip: skip });
+  componentWillMount() {
+    this.setStateFromQuery();
   }
-  handleSort(sortBy) {
+  componentDidUpdate(prevProps, prevState) {
+    if (this.state.queryRedirect) {
+      this.setState({ queryRedirect: undefined });
+    }
+    if (prevProps.query != this.props.query) {
+      this.setStateFromQuery();
+    }
+  }
+  setStateFromQuery() {
+    const state = queryToState(this.props.query);
+    console.log('setStateFromQuery', state);
+    this.setState(state);
+  }
+  setQueryRedirectFromState(newState) {
+    const queryString = stateToQuery(this.state, newState);
+    this.setState({ queryRedirect: queryString });
+  }
+  handlePageChange(skip) {
+    this.setQueryRedirectFromState({ skip: skip });
+  }
+  handleSort(sortField) {
     const fToD = {
       host: 1,
-      date: -1
+      latestHit: -1
     }
-    this.setState({ 'sortField': sortBy, sortDir: fToD[sortBy]});
+    this.setQueryRedirectFromState({ 
+      sortField: sortField, 
+      sortDir: fToD[sortField] 
+    });
   }
   handleSearch(hostSearch) {
-    this.setState({ hostSearch: hostSearch.length ? hostSearch : undefined });
+    this.setQueryRedirectFromState({ 
+      hostSearch: hostSearch.length ? hostSearch : undefined,
+      skip: 0
+    });
   }
   handleFilter(mac) {
-    mac == 'all' && (mac = undefined);
-    this.setState({ filter: mac });
+    this.setQueryRedirectFromState({ filter: mac });
+  }
+  getRemoteHostsPageVars() {
+    const vars = Object.assign({}, this.state);
+    vars.filter == 'all' && (vars.filter = undefined);
+    return vars;
   }
   render() {
+    if (this.state.queryRedirect) return <Redirect push to={this.state.queryRedirect} />;
     return (
     <Style>
       <SearchControls 
@@ -95,7 +162,7 @@ class HostSearch extends Component {
       />
       <Query 
         query={REMOTE_HOSTS_PAGE} 
-        variables={this.state} 
+        variables={this.getRemoteHostsPageVars()} 
       >
         {({loading, error, data: { remoteHostsPage } }) => {
           if (loading) return `Loading...`;
@@ -121,6 +188,18 @@ class HostSearch extends Component {
 }
 
 class SearchControls extends Component {
+  state = { input: '' };
+  updateInputFromState() {
+    this.setState({ input: this.props.hostSearch || '' });
+  }
+  componentWillMount() {
+    this.updateInputFromState();
+  }
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.hostSearch != this.props.hostSearch) {
+      this.updateInputFromState();
+    }
+  }
   handleKeyDown(e) {
     e.keyCode == 13 && this.search();
   }
@@ -128,20 +207,23 @@ class SearchControls extends Component {
     this.search();
   }
   search() {
-    this.props.onSearch(this.inputRef.inputRef.value);
+    this.props.onSearch(this.state.input);
   }
-  render() { return (
-    <SearchControlsStyle>
-      <Input 
-        ref={x => this.inputRef = x}
-        action={{ icon: 'search', onClick: this.search.bind(this) }} 
-        placeholder='Search...' 
-        onKeyDown={this.handleKeyDown.bind(this)}
-      />
-      <FilterControl {...this.props} />
-      <SortControl {...this.props} />
-    </SearchControlsStyle>
-  );}
+  render() { 
+    return (
+      <SearchControlsStyle>
+        <Input 
+          action={{ icon: 'search', onClick: this.search.bind(this) }} 
+          placeholder='Search...' 
+          onKeyDown={this.handleKeyDown.bind(this)}
+          value={this.state.input}
+          onChange={e => this.setState({ input: e.target.value })}
+        />
+        <FilterControl {...this.props} />
+        <SortControl {...this.props} />
+      </SearchControlsStyle>
+    );
+  }
 }
 
 const FilterControl = p => (
@@ -149,8 +231,6 @@ const FilterControl = p => (
     {({loading, error, data: {devices}}) => {
       if (loading) return null;
       const sortedDevices = _.sortBy(devices, ['name', 'mac']);
-      const filteredDev = _.find(devices, { mac: p.filter });
-      const disp = filteredDev && (filteredDev.name||filteredDev.mac) || 'Device filter';
       const options = [{ 
         key: 'all', 
         text: 'All', 
@@ -163,11 +243,14 @@ const FilterControl = p => (
         content: d.name || d.mac
       })));
       return (
-        <Dropdown 
-          text={disp} 
+        <Dropdown
+          button
+          labeled
+          className='icon' 
           icon='filter' 
-          onChange={(e, o) => p.onFilter(o.value)}
           options={options}
+          value={p.filter}
+          onChange={(e, o) => p.onFilter(o.value)}
           scrolling
         />
       )
@@ -175,27 +258,14 @@ const FilterControl = p => (
   </Query>
 );
 
-const sortOptions = [
-  { 
-    key: 'host',
-    text: 'host',
-    value: 'host',
-    content: 'Host'
-  },
-  {
-    key: 'date',
-    text: 'date',
-    value: 'latestHit',
-    content: 'Date'
-  }
-];
-const sortKeyToDisp = k => _.find(sortOptions, { value: k }).content;
 const SortControl = p => (
-  <Dropdown 
-    text={sortKeyToDisp(p.sortField)} 
+  <Dropdown
+    button
+    labeled
+    className='icon' 
     icon='sort'
-    options={sortOptions}
-    defaultValue={sortOptions[0].value}
+    options={SORT_OPTIONS}
+    value={p.sortField}
     onChange={(e, o) => p.onSort(o.value)}
   />
 );
