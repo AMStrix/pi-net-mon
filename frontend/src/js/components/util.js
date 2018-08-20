@@ -66,24 +66,32 @@ module.exports.processDeviceHitsForChart = hitString => {
   hostsArr.sort((a, b) => b[1] - a[1]);
   const topHostsArr = _.take(hostsArr, 5).map(x => ({ h: x[0], v: x[1] }));
   const topHostsMap = topHostsArr.reduce((a, h) => (a[h.h] = true) && a, {});
-  const totalOtherSum = _.drop(hostsArr, 5).reduce((a, x) => a += x[1], 0);
+  const sum = hostsArr.reduce((a, x) => a += x[1], 0);
   // data 
   const data = fromServer.map(item => {
     const hrLabel = moment(item.time).format('ha');
     const topH = _.transform(topHostsMap, (a, v, k) => {
-      item.device.host[k] && (a[k] = item.device.host[k].hits) || (a[k] = 0);
-    }, {});
-    const topHSum = _.reduce(topH, (a, v) => a + v, 0);
+      item.device.host[k] && 
+        a.push({ k: k, v: item.device.host[k].hits }) || 
+        a.push({ k: k, v: 0 });
+    }, []);
+    const topHSum = _.reduce(topH, (a, th) => a + th.v, 0);
+    topH.push({ k: 'other', v: item.device.hits - topHSum });
     return {
       ts: hrLabel,
-      sum: item.device.hits,
-      otherSum: item.device.hits - topHSum,
-      h: topH
+      vals: topH
     }
   });
+  // sums
+  const sumsMap = data.reduce((a, x) => {
+    x.vals.forEach(z => a[z.k] && (a[z.k] += z.v) || (a[z.k] = z.v));
+    return a;
+  }, {});
+  const sums = _.transform(sumsMap, (a, v, k) => a.push({ k: k, v: v }), []);
+  _.find(sums, { k: 'other' }).rest = true;
   return {
-    totalOtherSum: totalOtherSum,
-    topHosts: topHostsArr,
+    sum: sum,
+    sums: sums,
     data: data
   }
 }

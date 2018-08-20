@@ -116,7 +116,6 @@ class HostSearch extends Component {
   }
   setStateFromQuery() {
     const state = queryToState(this.props.query);
-    console.log('setStateFromQuery', state);
     this.setState(state);
   }
   setQueryRedirectFromState(newState) {
