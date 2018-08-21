@@ -9,6 +9,7 @@ import _ from 'lodash';
 import { REMOTE_HOST } from './gql';
 import { lightBlue, grayText } from '../colors';
 import Value from './Value';
+import HostDeviceChart from './HostDeviceChart';
 
 const Style = styled.div`
   margin: 8px 8px 0 8px;
@@ -71,6 +72,7 @@ const Host = ({match:{params:{host}}}) => (
             {remoteHost.assocHosts && <Value small label='associated'
               value={<div>{remoteHost.assocHosts.map(x => <div key={x} >{x}</div>)}</div>}
             />}
+            <HostDeviceChart host={host} devices={remoteHost.devices} />
           </div>
         );
       }}

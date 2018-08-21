@@ -96,6 +96,49 @@ module.exports.processDeviceHitsForChart = hitString => {
   }
 }
 
+module.exports.processHostHitsForChart = hitString => {
+  const fromServer = JSON.parse(hitString);
+  // top devs
+  const devs = fromServer.reduce((devs, hr) => {
+    _.forEach(hr.host.device, (v, k) => {
+      devs[k] ? (devs[k] += v.hits) : (devs[k] = v.hits);
+    });
+    return devs;
+  }, {});
+  const devsArr = _.transform(devs, (a, v, k) => a.push([k, v]), []);
+  devsArr.sort((a, b) => b[1] - a[1]);
+  const topDevsArr = _.take(devsArr, 5).map(x => ({ h: x[0], v: x[1] }));
+  const topDevsMap = topDevsArr.reduce((a, h) => (a[h.h] = true) && a, {});
+  const sum = devsArr.reduce((a, x) => a += x[1], 0);
+  // data 
+  const data = fromServer.map(item => {
+    const hrLabel = moment(item.time).format('ha');
+    const top = _.transform(topDevsMap, (a, v, k) => {
+      item.host.device[k] && 
+        a.push({ k: k, v: item.host.device[k].hits }) || 
+        a.push({ k: k, v: 0 });
+    }, []);
+    const topSum = _.reduce(top, (a, th) => a + th.v, 0);
+    topDevsArr.length == 5 && top.push({ k: 'other', v: item.host.hits - topSum });
+    return {
+      ts: hrLabel,
+      vals: top
+    }
+  });
+  // sums
+  const sumsMap = data.reduce((a, x) => {
+    x.vals.forEach(z => a[z.k] && (a[z.k] += z.v) || (a[z.k] = z.v));
+    return a;
+  }, {});
+  const sums = _.transform(sumsMap, (a, v, k) => a.push({ k: k, v: v }), []);
+  topDevsArr.length == 5 && (_.find(sums, { k: 'other' }).rest = true);
+  return {
+    sum: sum,
+    sums: sums,
+    data: data
+  }
+}
+
 const parseQueryValue = v => /^[-]?[\d]+$/.test(v) && parseInt(v, 10) || v;
 module.exports.parseQuery = qs => 
   qs.replace('?', '')

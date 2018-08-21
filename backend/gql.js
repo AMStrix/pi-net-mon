@@ -140,6 +140,7 @@ let schema = buildSchema(`
     remoteHostsPage(sortField: String, sortDir: Int, skip: Int, limit: Int, hostSearch: String, filter: String): RemoteHostsPage
     allHostHits24hr(date: Date!): String
     deviceHits24hr(mac: String!, date: Date!): String
+    hostHits24hr(host: String!, date: Date!): String
     threatFeeds: [Feed]
   }
 
@@ -242,6 +243,9 @@ let root = {
     .then(JSON.stringify),
   deviceHits24hr: ({mac, date}) => broalyzer
     .getHitsForDevice24hr(mac, new Date(date))
+    .then(JSON.stringify),
+  hostHits24hr: ({host, date}) => broalyzer
+    .getHitsForHost24hr(host, new Date(date))
     .then(JSON.stringify),
   threatFeeds: () => feeds.getFeeds(),
 

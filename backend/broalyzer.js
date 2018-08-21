@@ -300,30 +300,30 @@ const updateTree = (mac, ip, host, date, source, uid) => new Promise((res, rej) 
   // time
   const hrNode = setGetPath(tree, makeHrPath(date), { host: {}, device: {} });
 
-  // time - dev
+  // time - host
   const hostNode = hrNode.host[host] = hrNode.host[host] || { hits: 0 };
   hostNode.hits++;
 
-  // time - dev - host
+  // time - host - dev
   const hostDevNode = setGetPath(hostNode, 'device.'+mac, { uids: [], hits: 0 });
   hostDevNode.hits++;
   hostDevNode.uids.push(uid);
 
-  // time - dev - host - source
+  // time - host - dev - source
   const hostDevSourceNode = setGetPath(hostDevNode, 'source.'+source, { hits: 0 });
   hostDevSourceNode.hits++;
 
-  // time - host
+  // time - dev
   const devNode = hrNode.device[mac] = hrNode.device[mac] || { hits: 0 };
   devNode.hits++;
 
-  // time - host - dev 
+  // time - dev - host 
   const devHostNodeParent = setGetPath(devNode, 'host', {}); // hosts have dots, so extra step
   const devHostNode = devHostNodeParent[host] = devHostNodeParent[host] || { uids: [], hits: 0 };
   devHostNode.hits++;
   devHostNode.uids.push(uid);
 
-  // time -host - dev - source
+  // time - dev - host - source
   const devHostSourceNode = setGetPath(devHostNode, 'source.'+source, { hits: 0 });
   devHostSourceNode.hits++;
 
@@ -351,7 +351,16 @@ module.exports.getHitsForDevice24hr = (mac, date) =>
 
 module.exports.getHitsForHost24hr = (host, date) =>
   new Promise((res, rej) => {
-    res(null);
+    const paths = make24hrPaths(date.getTime());
+    const pToArr = (p, x) => {
+      const arr = p.split('.');
+      return arr.concat(x || []);
+    };
+    const hostByHr = paths.map(p => ({ 
+      time: p.date, 
+      host: _.get(tree, pToArr(p.path, ['host', host]), { hits: 0, device: {} })
+    }));
+    res(hostByHr);
   });
 
 module.exports.getHitsForAllHosts24hr = date => 

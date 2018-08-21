@@ -183,6 +183,12 @@ export const DEVICE_HITS_24HR = gql`
   }
 `;
 
+export const HOST_HITS_24HR = gql`
+  query hostHits24hr($host: String!, $date: Date!) {
+    hostHits24hr(host: $host, date: $date)
+  }
+`;
+
 export const ALL_HOST_HITS_24HR = gql`
   query allHostHits24hr($date: Date!) {
     allHostHits24hr(date: $date)

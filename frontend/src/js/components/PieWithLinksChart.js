@@ -45,7 +45,7 @@ class PieWithLinksChart extends Component {
   }
 }
 
-const ThePie = ({data, size, label, makeLink}) => (
+const ThePie = ({data, size, label, makeLink, makeLinkLabel}) => (
   <PieStyle>
     <div className='pie'>
       <span style={{ top: (size / 2 - 9) + 'px' }}>{label}</span>
@@ -65,7 +65,7 @@ const ThePie = ({data, size, label, makeLink}) => (
     {data.map((x, i) => (
       <div key={x.k} className='link'>
         <Icon name='circle' style={{ color: chartColors[i]() }} />
-          <Link to={makeLink(x)}>{x.k}</Link> {x.v}
+          <Link to={makeLink(x)}>{makeLinkLabel && makeLinkLabel(x) || x.k}</Link> {x.v}
       </div>
     ))}
     </div>
