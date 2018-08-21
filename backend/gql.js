@@ -120,6 +120,7 @@ let schema = buildSchema(`
     rulesCount: Int
     processing: Boolean
     error: String
+    lastPull: Date
   }
   type RemoteHostsPage {
     hosts: [RemoteHost]
@@ -195,6 +196,10 @@ function populateHostDevices(h) {
       .then(devs => _.set(h, 'devices', devs));
 }
 
+function feedsToGql(fs) {
+  return fs.map(f => _.set(f, 'lastPull', f.lastPull && new Date(f.lastPull) || null));
+}
+
 function login({user, pass}, {session}) {
   return db.authorize(user, pass)
     .then(err => {
@@ -247,7 +252,7 @@ let root = {
   hostHits24hr: ({host, date}) => broalyzer
     .getHitsForHost24hr(host, new Date(date))
     .then(JSON.stringify),
-  threatFeeds: () => feeds.getFeeds(),
+  threatFeeds: () => feeds.getFeeds().then(feedsToGql),
 
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),
   installBro: install.install,

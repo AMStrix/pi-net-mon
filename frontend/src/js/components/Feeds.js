@@ -76,8 +76,9 @@ const Feed = p => (
     <div><Activate id={p.id} active={p.active} label={p.description} disabled={p.processing}/></div>
     <div className='sub'>
       {p.processing && <div><Loader size='mini' inline active /> processing...</div>}
-      {p.error && <div><Icon name='warning circle'/> {p.error}</div>}
-      <div>{p.lastupdate}</div>
+      {p.active && p.error && <div><Icon name='warning circle'/> {p.error}</div>}
+      {!p.active && <div>isc.sans lastupdate: {moment(p.lastupdate).format('M/D k:mm')}</div>}
+      {p.active && p.lastPull && <div>last pull: {moment(p.lastPull).format('M/D k:mm')}</div>}
       {p.active && !p.processing && <div><b>active rules: {p.rulesCount}</b></div>}
     </div>
   </FeedStyle>

@@ -210,6 +210,7 @@ export const THREAT_FEEDS = gql`
       rulesCount
       processing
       error
+      lastPull
     }
   }
 `;
