@@ -1,6 +1,5 @@
 
 // isc.sans.edu api feeds downloader
-// api is janky, but lets keep this around
 
 const https = require('https');
 const _ = require('lodash');
@@ -17,7 +16,6 @@ const FEED = (id, f, t) => `${API}threatlist/${id}/${fmt(f)}/${fmt(t)}/?json`;
 const FEEDS_FILE = 'data/feeds.feeds.tree';
 const THREATS_FILE = 'data/feeds.threats.tree';
 
-let cache = {};
 const state = {
   feeds: {},
   ips: {},
@@ -26,34 +24,43 @@ const state = {
 
 const get = (url) => new Promise((res, rej) => {
   l.info(`feeds.get ${url}`)
-  if (cache[url]) {
-    rej(cache[url]);
-    return;
-  }
   let data = '';
   https.get(url, resp => {
-    resp.on('data', chunk => data += chunk);
-    resp.on('end', (x) => {
-      // console.log('END |'+data+'|');
-      try {
-        cache[url] = JSON.parse(data);
-      } catch (e) {
-        l.error(`feeds.get could not parse ${url}, data: "${data}"`);
-        cache[url] = null;
-      }
-      res(cache[url]);
-    });
-  }).on('error', e => l.error(`feeds.get ${url} error ${e}`));
+    if (resp.statusCode != 200) {
+      const err = `feeds.get failed, status ${resp.statusCode} ${url}`;
+      console.log(err);
+      rej(err);
+    } else {    
+      resp.on('data', chunk => data += chunk);
+      resp.on('end', (x) => {
+        // console.log('END |'+data+'|');
+        let json;
+        try {
+          json = JSON.parse(data);
+        } catch (e) {
+          const err = `feeds.get could not parse ${url}, data: "${data}"`;
+          l.error(err);
+          rej(err);
+        }
+        res(json);
+      });
+    }
+  }).on('error', e => {
+    const err = `feeds.get ${url} error ${e}`;
+    l.error(err);
+    rej(err);
+  });
 });
 
 const fetchFeedList = () => {
-  return get(FEEDS).catch(x => x);
+  return get(FEEDS);
 };
 
 const fetchThreatFeed = id => {
   let f = new Date(Date.now() - 1000*60*60*24 * 365);
   const t = new Date();
   const lastPull = state.feeds[id].lastPull;
+  state.feeds[id].error = null;
   if (lastPull) {
     f = new Date(lastPull);
     l.info(`feeds.fetchThreatFeed updating ${id} from ${f} to now`);
@@ -61,14 +68,20 @@ const fetchThreatFeed = id => {
     l.info(`feeds.fetchThreatFeed initial pull of ${id} from ${f} to now`);
   }
   const url = FEED(id, f, t);
-  return get(url).then(x => {
-    state.feeds[id].lastPull = t.getTime();
-    saveFeedsState(); // persist
-    return x;
-  });
+  return get(url)
+    .then(x => {
+      state.feeds[id].lastPull = t.getTime();
+      saveFeedsState(); // persist
+      return x;
+    })
+    .catch(e => {
+      state.feeds[id].error = `${moment(t).format('M/D k:mm')} ${e}`;
+      return null;
+    });
 }
 
 const processFeedList = (feeds) => {
+  l.info(`feeds.processFeedList processing ${feeds.length} feeds`);
   feeds.forEach(f => {
     if (state.feeds[f.type]) {
       state.feeds[f.type] = _.defaults({
@@ -145,15 +158,8 @@ const mergeThreatFeed = (feed, source) => {
 const addThreatsById = id => {
   // load feeds assoc with id
   state.feeds[id].processing = true;
-  state.feeds[id].error = null;
   return fetchThreatFeed(id)
-    .catch(x => x)
-    .then(x => {
-      if (x === null) {
-        state.feeds[id].error = 'failed to fetch';
-      }
-      return x === null && [] || x;
-    })
+    .then(x => x || [])
     .then(feed => mergeThreatFeed(feed, id))
     .then(() => state.feeds[id].processing = false)
     .then(saveThreatsState);
@@ -186,7 +192,14 @@ const refreshThreatsLoop = async () => {
   }
 }
 
+const refreshFeedsLoop = () => {
+  fetchFeedList()
+    .then(processFeedList)
+    .then(saveFeedsState);
+}
+
 let refreshThreatsLoopInterval = null;
+let refreshFeedsLoopInterval = null;
 
 module.exports = {};
 
@@ -196,16 +209,18 @@ module.exports.init = () => {
       fetchFeedList()
         .then(processFeedList)
         .then(saveFeedsState)
+        .catch(e => l.error(e))
     )
     .then(loadThreatsState)
     .catch(x => x)
     .then(() => {
       _.values(state.feeds).forEach(f => f.processing = false);
       refreshThreatsLoopInterval = setInterval(refreshThreatsLoop, 1000 * 60);
+      refreshFeedsLoopInterval = setInterval(refreshFeedsLoop, 1000 * 60 * 60);
     });
 };
 
-module.exports.getFeeds = () => _.values(state.feeds);
+module.exports.getFeeds = () => Promise.resolve(_.cloneDeep(_.values(state.feeds)));
 
 module.exports.activateFeed = (id, active) => {
   const feed = state.feeds[id];
@@ -215,5 +230,13 @@ module.exports.activateFeed = (id, active) => {
   return [feed];
 };
 
+module.exports.forceFeedUpdate = (id) => {
+  const feed = state.feeds[id];
+  const exists = feed ? true : false;
+  const active = feed && feed.active || false;
+  if (!exists) return { error: `feed ${id} does not exist` };
+  if (exists && !active) return { error: `cannot update inactive feed ${id}` };
+  addThreatsById(id);
+}
 
 
