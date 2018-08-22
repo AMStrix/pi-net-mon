@@ -203,6 +203,9 @@ let refreshFeedsLoopInterval = null;
 
 module.exports = {};
 
+module.exports.getIps = () => state.ips;
+module.exports.getDomains = () => state.domains;
+
 module.exports.init = () => {
   return loadFeedsState()
     .catch(() => 

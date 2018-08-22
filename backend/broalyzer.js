@@ -8,8 +8,9 @@ const _ = require('lodash');
 const moment = require('moment');
 const filesize = require('filesize');
 
-const f = require('./f');
+const { isStringIp } = require('./f');
 const l = require('./log');
+const alerts = require('./alerts');
 const db = require('./db'); //nedb
 
 const LOGS = '/opt/nsm/bro/logs/';
@@ -188,9 +189,10 @@ function watchEventsByUidBuffer() {
 
 const broHandlers = {};
 
-const isStringIp = s => s.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
-
-const broHandlerAll = group => Promise.resolve();
+const broHandlerAll = group => {
+  return alerts.catchThreats(group)
+    .then(() => alerts.catchDomainThreats(group));
+};
 
 const extractBroHost = group => {
   const host = ['host', 'server_name', 'query']

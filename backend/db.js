@@ -6,7 +6,7 @@ const _ = require('lodash');
 const l = require('./log');
 const f = require('./f');
 
-const DBS = ['users', 'localIps', 'devices', 'remoteHosts', 'ipToHost'];
+const DBS = ['users', 'localIps', 'devices', 'remoteHosts', 'ipToHost', 'alerts'];
 
 const dbOnload = (name, e) => {
   if (!e) {
@@ -45,6 +45,8 @@ Object.keys(INDEXES).forEach(dbn => {
 
 db.remoteHosts.ensureIndex({ fieldName: 'latestHit' }, 
     e => e && l.error(`db.js problem indexing remoteHosts.db (latestHit) : ${'\n'+e.stack}`));
+db.alerts.ensureIndex({ fieldName: 'time' },
+    e => e && l.error(`dbjs problem indexing alerts.db (time) : ${'\n'+e.stack}`));
 
 // data manipulation
 function makeLocalIp(d) {
@@ -99,9 +101,9 @@ function makeDevice(d, old) {
   return updated;
 }
 
+const $set = (a, b, n, op, p) => b[n] && (_.set(a, `${op&&op+'.'||''}${n}${p&&'s'||''}`, b[n]));
 function makeHostUpdate(raw) {
   if (!raw.host) { throw new Error('makeHostUpdate(raw) req host, was: ' + JSON.stringify(raw, null, 2)); }
-  const $set = (a, b, n, op, p) => b[n] && (_.set(a, `${op&&op+'.'||''}${n}${p&&'s'||''}`, b[n]));
   const out = {};
   $set(out, raw, 'latestHit', '$set');
   $set(out, raw, 'latestMac', '$set');
@@ -300,6 +302,25 @@ module.exports.getRemoteHost = h => new Promise((res, rej) => {
     e && l.error(`db.getRemoteHost(${h}) error: ${e}`);
     res(d);
   })
+});
+
+module.exports.addAlert = (raw) => new Promise((res, rej) => {
+  db.alerts.insert(raw, (e, doc) => {
+    e && l.error(`db.addAlert error ${e} raw ${raw}`);
+    res(doc);
+  });
+});
+
+module.exports.getAlerts = (deviceFilter, ipFilter, hostFilter) => new Promise((res, rej) => {
+  db.alerts.find({}, {})
+    .sort({ time: 1 })
+    .limit(100)
+    .exec((e, ds) => {
+      e && l.error(`db.getAlerts error ${e}`);
+      Promise.all(ds.map(d => 
+        macToName(d.mac).then(n => _.set(d, 'deviceName', n))
+      )).then(res);
+    })
 });
 
 //db.remoteHosts.update({}, { $unset: { hits: true, hitsSum: true } }, { multi: true }, (a,b) => console.log('$unset',a,b));

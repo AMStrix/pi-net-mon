@@ -122,9 +122,25 @@ let schema = buildSchema(`
     error: String
     lastPull: Date
   }
+  type ThreatRule {
+    domain: String
+    date: Date
+    lastSeen: Date
+    feed: String
+  }
   type RemoteHostsPage {
     hosts: [RemoteHost]
     count: Int
+  }
+  type Alert {
+    id: String,
+    time: Date,
+    mac: String,
+    deviceName: String,
+    ip: String,
+    domain: String,
+    ipThreat: ThreatRule,
+    domainThreat: ThreatRule
   }
 
 
@@ -143,6 +159,7 @@ let schema = buildSchema(`
     deviceHits24hr(mac: String!, date: Date!): String
     hostHits24hr(host: String!, date: Date!): String
     threatFeeds: [Feed]
+    alerts: [Alert]
   }
 
   type Mutation {
@@ -187,6 +204,13 @@ function hostsToGql(hs) {
 function hostToGql(h) {
   h.id = h.host;
   return h;
+}
+
+function alertsToGql(alerts) {
+  return alerts.map(a => {
+    a.id = a._id;
+    return a;
+  });
 }
 
 function populateHostDevices(h) {
@@ -253,6 +277,7 @@ let root = {
     .getHitsForHost24hr(host, new Date(date))
     .then(JSON.stringify),
   threatFeeds: () => feeds.getFeeds().then(feedsToGql),
+  alerts: () => db.getAlerts().then(alertsToGql),
 
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),
   installBro: install.install,

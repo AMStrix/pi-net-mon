@@ -63,3 +63,4 @@ module.exports.ymdh = ymdh = date => [
   date.getUTCHours()
 ];
 
+module.exports.isStringIp =  s => s.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
