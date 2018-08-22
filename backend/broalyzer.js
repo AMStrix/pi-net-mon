@@ -119,19 +119,38 @@ const processBroResultsByUid = async byUid => {
   saveTree();
 };
 
-const processBroResultByUid = async arr => {
-  const uid = arr[0].uid;
-  const types = _.uniq(arr.map(x => x.broType));
-  const dbCalls = [];
-  for (let i = 0; i < types.length; i++) {
-    if (broHandlers[types[i]]) {
-      const res = await broHandlers[types[i]](arr);
-      broHandlerAll(arr);
-      res && dbCalls.push(res);
-    }
-  }
-  return Promise.resolve(dbCalls);
+
+
+const extractBroUid = group => {
+  const uid = group[0].uid;
+  return uid;
 };
+
+const extractPrimaryBroType = group => {
+  const primary = group.find(x => x.broType != 'conn'); 
+  if (!primary) {
+    l.debug(`broalyzer.extractPrimaryBroType no primary type for ${extractBroUid(group)}, using 'conn'`);
+    return 'conn';
+  }
+  return primary.broType;
+};
+
+const extractBroTypes = group => {
+  return group.map(x => x.broType);
+};
+
+const extractMacFromGroup = group => {
+  const conn = _.find(group, 'orig_l2_addr');
+  return conn.orig_l2_addr.toUpperCase();
+};
+
+const processBroResultByUid = group => {
+  const primaryType = extractPrimaryBroType(group);
+  const cif = (fn, x) => fn && fn(x);
+  return broHandlerAll(group)
+    .then(() => cif(broHandlers[primaryType], group));
+};
+
 
 
 const eventsByUid = {};
@@ -147,11 +166,9 @@ const bufferEventByUid = (uid, event) => {
 
 module.exports.handleBroEvent = (source, event) => {
   if (ignoreBroEventSources.find(ig => ig == source)) return;
-  //console.log(source, event.uid, new Date(event.ts*1000));
-  event.broType = source; // tag it
-  event.buffAt = Date.now(); // tag it
+  event.broType = source;
+  event.buffAt = Date.now();
   bufferEventByUid(event.uid, event);
-  //console.log(JSON.stringify(eventsByUidBuffer, null, 4));
 };
 
 function watchEventsByUidBuffer() {
@@ -173,94 +190,85 @@ const broHandlers = {};
 
 const isStringIp = s => s.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
 
-let durationMax = 0;
-let durationTotal = 0;
-let durationCount = 0;
-const broHandlerAll = group => {
-  group.forEach(x => {
-    if (x.duration) { 
-      durationMax = Math.max(x.duration, durationMax);
-      durationTotal += x.duration;
-      durationCount++;
-    }
-    if (x.duration > 40) {
-      //console.log(JSON.stringify(group, null, 4));
-    }
-  })
+const broHandlerAll = group => Promise.resolve();
+
+const extractBroHost = group => {
+  const host = ['host', 'server_name', 'query']
+    .map(fn => (_.find(group, fn)||{})[fn])
+    .find(z => z);
+  return host;
+}
+
+const extractBroAssocIps = group => {
+  const primaryType = extractPrimaryBroType(group);
+  let ips = [];
+  if (primaryType == 'dns') {
+    ips = _.get(_.find(group, 'answers'), 'answers', [])
+      .filter(isStringIp);
+  } else {
+    ips = [group[0]['id.resp_h']];
+  }
+  return ips;
+}
+
+const extractCommonBroFields = group => {
+  group.sort((a,b) => a.ts - b.ts);
+  const get = (g, f) => _.find(g, x => x[f] !== undefined)[f];
+  return {
+    uid: extractBroUid(group),
+    mac: extractMacFromGroup(group),
+    tsms: group[0].ts * 1000,
+    origIp: get(group, 'id.orig_h'),
+    respIp: get(group, 'id.resp_h'),
+    port: get(group, 'id.resp_p'),
+    host: extractBroHost(group),
+    ips: extractBroAssocIps(group),
+    localOrig: get(group, 'local_orig'),
+    localResp: get(group, 'local_resp')
+  }
 };
 
-const extractMacFromGroup = group => {
-  const conn = _.find(group, 'orig_l2_addr');
-  return conn.orig_l2_addr.toUpperCase();
-};
+const resolveHost = (host, respIp) => host ? Promise.resolve(host) : db.getHostForIp(respIp);
+
 
 broHandlers.dns = group => {
-  const uid = group[0].uid;
-  const mac = extractMacFromGroup(group);
-  const tsms = group[0].ts * 1000;
-  const host = (_.find(group, 'query')||{}).query;
-  group.sort((a,b) => a.ts - b.ts);
-  if (host) {
-    let ips = _.get(_.find(group, 'answers'), 'answers', []);
-    const weird = (_.find(group, { broType: 'weird' })||{}).name;
-    ips = ips.reduce((a, x) => (isStringIp(x)&&a.push(x)&&a)||a, []);
-    ips.forEach(ip => db.addIpToHost(ip, host, new Date(tsms)));
-  }
-  const origIp = group[0]['id.orig_h'];
-  const respIp = group[0]['id.resp_h'];
-  const port = group[0]['id.resp_p'];
+  const {uid, mac, tsms, host, origIp, respIp, port, ips} = extractCommonBroFields(group);
+  const time = new Date(tsms);
   if (port == 53 && host) {
     l.verbose(`bro dns > ${origIp}/${mac} ${host} (${respIp})`);
-    return updateTree(mac, origIp, host, new Date(tsms), 'dns', uid)
-      .then(() => updateDb(mac, origIp, host, new Date(tsms), 'dns'));
+    return Promise.all(ips.map(ip => db.addIpToHost(ip, host, time)))
+      .then(() => updateTree(mac, origIp, host, time, 'dns', uid))
+      .then(() => updateDb(mac, origIp, host, time, 'dns'));
   }
   return Promise.resolve();
 };
 
 broHandlers.http = group => {
-  const uid = group[0].uid;
-  const mac = extractMacFromGroup(group);
-  group.sort((a,b) => a.ts - b.ts);
-  const tsms = group[0].ts * 1000;
-  const origIp = group[0]['id.orig_h'];
-  const respIp = group[0]['id.resp_h'];
-  let host = _.get(_.find(group, 'host'), 'host');
+  const {uid, mac, tsms, host, origIp, respIp, ips} = extractCommonBroFields(group);
+  const time = new Date(tsms);
   l.verbose(`bro http > ${origIp}/${mac} ${host} (${respIp})`);
-  if (!host) { 
-    l.info(`XXXXXXXXXXXXXX broalyser.http did not see a host for ${respIp} (http)`);
-    return db.getHostForIp(respIp)
-      .then(hostFromDb => udpateDb(origIp, hostFromDb, new Date(tsms), 'http', respIp))
-      .catch(() => l.info(`XXXXXXXXXXXXXX broalyzer.http no host for ${respIp} from db.getHostForIp`))
-      .then(() => updateDb(mac, origIp, respIp, new Date(tsms), 'http')); // set host to ip
-  } else {
-    return updateTree(mac, origIp, host, new Date(tsms), 'http', uid)
-      .then(() => db.addIpToHost(respIp, host, new Date(tsms)))
-      .then(() => updateDb(mac, origIp, host, new Date(tsms), 'http', respIp));
-  }
-  return Promise.resolve();
+  return (host ? db.addIpToHost(respIp, host, time) : Promise.resolve())
+    .then(() => resolveHost(host, respIp))
+    .catch(() => {
+      l.info(`XXXXXXXXXXXXXX broalyzer.http no host for ${respIp}/${host} ${uid} ${e}`)
+      return respIp; // fallback to response ip
+    })
+    .then(h => updateTree(mac, origIp, h, time, 'http', uid).then(() => h))
+    .then(h => updateDb(mac, origIp, h, time, 'http', respIp).then(() => h));
 };
 
 broHandlers.ssl = group => {
-  const uid = group[0].uid;
-  const mac = extractMacFromGroup(group);
-  group.sort((a,b) => a.ts - b.ts);
-  const tsms = group[0].ts * 1000;
-  const origIp = group[0]['id.orig_h'];
-  const respIp = group[0]['id.resp_h'];
-  let host = _.get(_.find(group, 'server_name'), 'server_name');
+  const {uid, mac, tsms, host, origIp, respIp, ips} = extractCommonBroFields(group);
+  const time = new Date(tsms);
   l.verbose(`bro ssl > ${origIp}/${mac} ${host} (${respIp})`);
-  if (!host) { 
-    l.info(`XXXXXXXXXXXXXX broalyser.ssl did not see a host for ${respIp} (ssl)`);
-    return db.getHostForIp(respIp)
-      .then(hostFromDb => udpateDb(origIp, hostFromDb, new Date(tsms), 'ssl', respIp))
-      .catch(() => l.info(`XXXXXXXXXXXXXX broalyzer.ssl no host for ${respIp} from db.getHostForIp`))
-      .then(() => updateDb(mac, origIp, respIp, new Date(tsms), 'ssl')); // set host to ip
-  } else {
-    return updateTree(mac, origIp, host, new Date(tsms), 'ssl', uid)
-      .then(() => db.addIpToHost(respIp, host, new Date(tsms)))
-      .then(() => updateDb(mac, origIp, host, new Date(tsms), 'ssl', respIp));
-  }
-  return Promise.resolve();
+  return (host ? db.addIpToHost(respIp, host, time) : Promise.resolve())
+    .then(() => resolveHost(host, respIp))
+    .catch(() => {
+      l.info(`XXXXXXXXXXXXXX broalyzer.ssl no host for ${respIp}/${host} ${uid} ${e}`)
+      return respIp; // fallback to response ip
+    })
+    .then(h => updateTree(mac, origIp, h, time, 'ssl', uid).then(() => h))
+    .then(h => updateDb(mac, origIp, h, time, 'ssl', respIp).then(() => h));
 };
 
 const updateDb = (mac, ip, host, date, source, hostIp) => 
