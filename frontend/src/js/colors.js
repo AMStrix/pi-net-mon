@@ -1,4 +1,5 @@
 import Color from 'color';
+import _ from 'lodash';
 
 function c(str) {
   const col = Color(str);
@@ -27,4 +28,25 @@ module.exports = {
     c('#a2b968'), // green
     c('#0c94bc')  // lt blue
   ]
+}
+
+const levelKeys = [
+  { k: 0, color: Color('rgb(33, 133, 208)') }, // blue
+  { k: 0.33, color: Color('rgb(251, 189, 8)') }, // yellow
+  { k: 0.66, color: Color('rgb(242, 113, 28)') }, // orange
+  { k: 1, color: Color('rgb(219, 40, 40)') }  // red
+];
+
+module.exports.level = l => {
+  l < 0 && (l = 0);
+  l > 1 && (l = 1);
+  const start = _.findLast(levelKeys, x => x.k <= l);
+  const end = _.find(levelKeys, x => x.k > start.k );
+  if (end) {
+    const mix = (l - start.k) / (end.k - start.k);
+    //console.log(`level: ${l} start: ${start.k} end: ${end.k} mix: ${mix}`);
+    return c(start.color.mix(end.color, mix).toString());
+  } else {
+    return c(start.color.toString());
+  }
 }

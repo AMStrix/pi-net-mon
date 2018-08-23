@@ -227,6 +227,34 @@ export const ACTIVATE_THREAT_FEED = gql`
   }
 `;
 
+export const FULL_THREAT_RULE = gql`
+  fragment FullThreatRule on ThreatRule { 
+    ip 
+    domain 
+    date 
+    lastSeen 
+    feed 
+  }
+`;
+
+export const ALERTS = gql`
+  query alerts {
+    alerts {
+      id
+      time
+      type
+      level
+      mac
+      deviceName
+      ip
+      domain
+      ipThreat { ...FullThreatRule }
+      domainThreat { ...FullThreatRule }
+      broUid
+    }
+  }
+  ${FULL_THREAT_RULE}
+`;
 
 
 

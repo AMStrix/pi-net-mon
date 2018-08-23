@@ -45,6 +45,9 @@ const ResultsStyle = styled.div`
         visibility: visible;
       }
     }
+    a:hover {
+      text-decoration: underline;
+    }
     .icon {
       visibility: hidden;
     }

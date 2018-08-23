@@ -13,6 +13,7 @@ import Devices from './Devices';
 import Hosts from './Hosts';
 import Feeds from './Feeds';
 import Login from './Login';
+import Alerts from './Alerts';
 
 const Wrapper = styled.div`
   display: flex;
@@ -64,6 +65,7 @@ class App extends Component {
             />
             {!authed && <Redirect to='/login' /> }
             <Route exact path='/' component={Dashboard} />
+            <Route path='/alerts' component={Alerts} />
             <Route path='/devices' component={Devices} />
             <Route path='/hosts' component={Hosts} />
             <Route path='/feeds' component={Feeds} />

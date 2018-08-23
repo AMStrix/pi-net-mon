@@ -13,6 +13,7 @@ const Style = styled.div`
   position: relative;
   padding: 4px;
   cursor: pointer;
+  border-bottom: 1px solid ${gray.lighten(0.8)};
   .controls {
     display: none;
   }
