@@ -20,7 +20,6 @@ const get = (g, f, d) => {
 };
 
 const extractIps = eventGroup => {
-  const uid = get(eventGroup, 'uid');
   const localResp = get(eventGroup, 'local_resp');
   const respIp = get(eventGroup, 'id.resp_h');
   const dnsAnswers = get(eventGroup, 'answers', []);
@@ -29,6 +28,7 @@ const extractIps = eventGroup => {
 };
 
 module.exports.catchThreats = eventGroup => new Promise((res, rej) => {
+  const uid = get(eventGroup, 'uid');
   const mac = get(eventGroup, 'orig_l2_addr').toUpperCase();
   const origIp = get(eventGroup, 'id.orig_h');
   const host = ['host', 'server_name', 'query']
@@ -45,7 +45,8 @@ module.exports.catchThreats = eventGroup => new Promise((res, rej) => {
     domain: host || null,
     mac: mac,
     ipThreat: ipThreat,
-    domainThreat: domainThreat
+    domainThreat: domainThreat,
+    broUid: uid
   });
 
   res();

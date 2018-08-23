@@ -313,7 +313,7 @@ module.exports.addAlert = (raw) => new Promise((res, rej) => {
 
 module.exports.getAlerts = (deviceFilter, ipFilter, hostFilter) => new Promise((res, rej) => {
   db.alerts.find({}, {})
-    .sort({ time: 1 })
+    .sort({ time: -1 })
     .limit(100)
     .exec((e, ds) => {
       e && l.error(`db.getAlerts error ${e}`);

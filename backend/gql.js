@@ -123,6 +123,7 @@ let schema = buildSchema(`
     lastPull: Date
   }
   type ThreatRule {
+    ip: String
     domain: String
     date: Date
     lastSeen: Date
@@ -133,14 +134,17 @@ let schema = buildSchema(`
     count: Int
   }
   type Alert {
-    id: String,
-    time: Date,
-    mac: String,
-    deviceName: String,
-    ip: String,
-    domain: String,
-    ipThreat: ThreatRule,
+    id: String
+    time: Date
+    type: String
+    level: Int
+    mac: String
+    deviceName: String
+    ip: String
+    domain: String
+    ipThreat: ThreatRule
     domainThreat: ThreatRule
+    broUid: String
   }
 
 
