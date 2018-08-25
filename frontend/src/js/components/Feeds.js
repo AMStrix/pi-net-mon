@@ -52,6 +52,9 @@ const FeedStyle = styled.div`
       background: ${blue};
     }
   }
+  .checked label {
+    font-weight: bold;
+  }
 `;
 
 class System extends Component {

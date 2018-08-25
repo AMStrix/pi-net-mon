@@ -60,6 +60,7 @@ const fetchThreatFeed = id => {
   let f = new Date(Date.now() - 1000*60*60*24 * 365);
   const t = new Date();
   const lastPull = state.feeds[id].lastPull;
+  state.feeds[id].lastPullError = null;
   state.feeds[id].error = null;
   if (lastPull) {
     f = new Date(lastPull);
@@ -76,6 +77,8 @@ const fetchThreatFeed = id => {
     })
     .catch(e => {
       state.feeds[id].error = `${moment(t).format('M/D k:mm')} ${e}`;
+      state.feeds[id].lastPullError = t.getTime();
+      saveFeedsState(); // persist
       return null;
     });
 }
@@ -151,7 +154,7 @@ const mergeThreatFeed = (feed, source) => {
   state.feeds[source].rulesCount = 
     _.values(state.domains).filter(x => x.feed == source).length +
     _.values(state.ips).filter(x => x.feed == source).length;
-  l.info(`feeds.mergeThreatFeed merged ${domainCount} domains, ${ipv4Count} ips`);
+  l.info(`feeds.mergeThreatFeed merged ${domainCount} domains, ${ipv4Count} ips from ${source}`);
   return Promise.resolve();
 }
 
@@ -179,12 +182,13 @@ const removeThreatsById = id => {
 }
 
 const refreshThreatsLoop = async () => {
-  const toUpdate = _.values(state.feeds).reduce((a, f) => {
-    f.active && (Date.now() - f.lastPull > 1000*60*60 * 24) && a.push(f);
-    return a;
-  }, []);
+  const toUpdate = _.values(state.feeds).filter(f => {
+    const successStale = !f.lastPull || (Date.now() - f.lastPull > 1000*60*60 * 24);
+    const failedStale = (f.lastPullError && (Date.now() - f.lastPullError > 1000*60*60 * 3));
+    const stale = (!f.lastPullError && successStale) || failedStale;
+    return f.active && stale;
+  });
   if (toUpdate.length > 0) {
-    // update
     l.info(`feeds.refreshThreatsLoop refreshing ${toUpdate.length} feeds`);
     for (let i = 0; i < toUpdate.length; i++) {
       await addThreatsById(toUpdate[i].id);
