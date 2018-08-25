@@ -347,6 +347,8 @@ module.exports.ignoreAlert = id => new Promise((res, rej) => {
   })
 });
 
+module.exports.deleteAlert = id => deleteAlerts({ _id: id });
+
 const deleteAlerts = module.exports.deleteAlerts = search => new Promise((res, rej) => {
   db.alerts.remove(search, { multi: true }, (e, c) => {
     e && rej(e);
