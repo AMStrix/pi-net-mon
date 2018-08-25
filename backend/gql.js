@@ -165,6 +165,7 @@ let schema = buildSchema(`
     hostHits24hr(host: String!, date: Date!): String
     threatFeeds: [Feed]
     alerts: [Alert]
+    alertCount(level: Int!): Int
   }
 
   type Mutation {
@@ -290,6 +291,7 @@ let root = {
     .then(JSON.stringify),
   threatFeeds: () => feeds.getFeeds().then(feedsToGql),
   alerts: () => db.getAlerts().then(alertsToGql),
+  alertCount: ({level}) => db.alertCount(level),
 
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),
   installBro: install.install,

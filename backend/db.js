@@ -326,6 +326,12 @@ module.exports.getAlerts = (deviceFilter, ipFilter, hostFilter) => new Promise((
     })
 });
 
+module.exports.alertCount = level => new Promise((res, rej) => {
+  db.alerts.count({ $not: { archive: true }, $gte: { level: level } }, (e, c) => {
+    e && rej(e) || res(c);
+  });
+});
+
 module.exports.archiveAlert = id => new Promise((res, rej) => {
   db.alerts.update(
     { _id: id }, 
