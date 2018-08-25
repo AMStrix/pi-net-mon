@@ -94,7 +94,7 @@ const processFeedList = (feeds) => {
         lastupdate: f.lastupdate
       }, state.feeds[f.type], { ignore: {} });
     } else {
-      state.feeds[f.type] = _.defaults(f, { id: f.type, active: false });
+      state.feeds[f.type] = _.defaults(f, { id: f.type, active: false, ignore: {} });
     }
   });
 };
