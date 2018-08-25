@@ -136,6 +136,7 @@ let schema = buildSchema(`
   }
   type Alert {
     id: String
+    archive: Boolean
     time: Date
     type: String
     level: Int
@@ -164,7 +165,7 @@ let schema = buildSchema(`
     deviceHits24hr(mac: String!, date: Date!): String
     hostHits24hr(host: String!, date: Date!): String
     threatFeeds: [Feed]
-    alerts: [Alert]
+    alerts(archived: Boolean): [Alert]
     alertCount(level: Int!): Int
   }
 
@@ -290,7 +291,7 @@ let root = {
     .getHitsForHost24hr(host, new Date(date))
     .then(JSON.stringify),
   threatFeeds: () => feeds.getFeeds().then(feedsToGql),
-  alerts: () => db.getAlerts().then(alertsToGql),
+  alerts: ({archived}) => db.getAlerts(archived).then(alertsToGql),
   alertCount: ({level}) => db.alertCount(level),
 
   createAdmin: ({user, pass}) => install.createAdmin(user, pass),
