@@ -35,6 +35,26 @@ const research = [
     name: 'cymon.io',
     types: { ip: true },
     url: ip => `https://cymon.io/${ip}`
+  },
+  {
+    name: 'alienvault.com',
+    types: { ip: true },
+    url: ip => `https://otx.alienvault.com/indicator/ip/${ip}`
+  },
+  {
+    name: 'alienvault.com',
+    types: { domain: true },
+    url: dom => `https://otx.alienvault.com/indicator/hostname/${dom}`
+  },
+  {
+    name: 'virustotal.com',
+    types: { ip: true },
+    url: ip => `https://www.virustotal.com/en/ip-address/${ip}/information`
+  },
+  {
+    name: 'virustotal.com',
+    types: { domain: true },
+    url: dom => `https://www.virustotal.com/en/domain/${dom}/information`
   }
 ];
 
