@@ -314,20 +314,24 @@ module.exports.addAlert = (raw) => new Promise((res, rej) => {
   });
 });
 
-module.exports.getAlerts = (deviceFilter, ipFilter, hostFilter) => new Promise((res, rej) => {
-  db.alerts.find({ $not: { archive: true } }, {})
-    .sort({ time: -1 })
-    .limit(100)
-    .exec((e, ds) => {
-      e && l.error(`db.getAlerts error ${e}`);
-      Promise.all(ds.map(d => 
-        macToName(d.mac).then(n => _.set(d, 'deviceName', n))
-      )).then(res);
-    })
-});
+module.exports.getAlerts = (archived, deviceFilter, ipFilter, hostFilter) => 
+  new Promise((res, rej) => {
+    const search = archived ?
+      { archive: true } :
+      { $not: { archive: true } };
+    db.alerts.find(search)
+      .sort({ time: -1 })
+      .limit(100)
+      .exec((e, ds) => {
+        e && l.error(`db.getAlerts error ${e}`);
+        Promise.all(ds.map(d => 
+          macToName(d.mac).then(n => _.set(d, 'deviceName', n))
+        )).then(res);
+      })
+  });
 
 module.exports.alertCount = level => new Promise((res, rej) => {
-  db.alerts.count({ $not: { archive: true }, $gte: { level: level } }, (e, c) => {
+  db.alerts.count({ $not: { archive: true }, level: { $gte: level } }, (e, c) => {
     e && rej(e) || res(c);
   });
 });
