@@ -211,6 +211,7 @@ export const THREAT_FEEDS = gql`
       processing
       error
       lastPull
+      ignored
     }
   }
 `;
@@ -229,7 +230,7 @@ export const ACTIVATE_THREAT_FEED = gql`
 
 export const FULL_THREAT_RULE = gql`
   fragment FullThreatRule on ThreatRule { 
-    ip 
+    ipv4
     domain 
     date 
     lastSeen 
@@ -237,9 +238,8 @@ export const FULL_THREAT_RULE = gql`
   }
 `;
 
-export const ALERTS = gql`
-  query alerts {
-    alerts {
+export const FULL_ALERT = gql`
+  fragment FullAlert on Alert {
       id
       time
       type
@@ -251,9 +251,24 @@ export const ALERTS = gql`
       ipThreat { ...FullThreatRule }
       domainThreat { ...FullThreatRule }
       broUid
-    }
   }
   ${FULL_THREAT_RULE}
+`;
+
+export const ALERTS = gql`
+  query alerts {
+    alerts { ...FullAlert }
+  }
+  ${FULL_ALERT}
+`;
+
+export const ALERT_ACTION = gql`
+  mutation alertAction($id: String!, $action: String!) {
+    alertAction(id: $id, action: $action) {
+      ...FullAlert
+    }
+  }
+  ${FULL_ALERT}
 `;
 
 

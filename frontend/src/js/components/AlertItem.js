@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { Mutation } from 'react-apollo';
 import { Redirect, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { Button, Icon, Popup } from 'semantic-ui-react';
@@ -6,6 +7,7 @@ import moment from 'moment';
 
 import Seen from './Seen';
 import { green, gray, orange, level } from '../colors';
+import { ALERTS, ALERT_ACTION } from './gql';
 
 const Style = styled.div`
   position: relative;
@@ -37,7 +39,7 @@ const DeetsStyle = styled.div`
 `;
 const TimeStyle = styled.div`
   color: ${gray};
-  font-size: 0.9em;
+  font-size: 0.8em;
 `;
 const DotStyle = styled.div`
   color: ${p => level(p.level/10)};
@@ -51,7 +53,7 @@ const ControlsStyle = styled.div`
   right: 0;
   bottom: 0;
   background: ${gray.darken(0.2)};
-  > * + * {
+  > button.ui.button + button.ui.button {
     margin-left: 0.8em;
   }
 `;
@@ -79,6 +81,7 @@ class AlertItem extends Component {
           &nbsp;&nbsp;
           {moment(p.time).format('MM/DD kk:mm')}
         </TimeStyle>
+        <Controls {...p} />
       </Style>
     );
   }
@@ -112,11 +115,43 @@ const Desc = p => {
   return null;
 }
 
-
 const Dot = ({level}) => (
   <DotStyle level={level}>
     <Icon name='circle' />
   </DotStyle>
+);
+
+
+const alertActionUpdate = (cache, { data }) => {
+  const query = cache.readQuery({ query: ALERTS });
+  query.alerts = data.alertAction;
+  cache.writeQuery({ query: ALERTS , data: query });
+}
+const Controls = p => (
+    <Mutation mutation={ALERT_ACTION} update={alertActionUpdate} >
+      {(alertAction, { data, loading }) => (
+        <ControlsStyle className='controls' onClick={e => e.stopPropagation()}>
+          <Button 
+            content='archive'
+            size='mini' 
+            onClick={() => alertAction({ variables: { id: p.id, action: 'archive'}})}
+            disabled={loading}
+          />
+          <Button 
+            content='delete'
+            size='mini' 
+            onClick={() => alertAction({ variables: { id: p.id, action: 'delete'}})}
+            disabled={loading}
+          />
+          <Button 
+            content='ignore'
+            size='mini' 
+            onClick={() => alertAction({ variables: { id: p.id, action: 'ignore'}})}
+            disabled={loading}
+          />
+        </ControlsStyle>
+      )}
+    </Mutation>
 );
 
 

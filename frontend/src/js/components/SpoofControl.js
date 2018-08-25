@@ -8,9 +8,6 @@ import { SPOOF_DEVICE } from './gql';
 
 const Style = styled.div`
   display: inline-block;
-  ._button {
-    padding: 4px 6px;
-  }
 `;
 
 const SpoofControl = ({
@@ -24,7 +21,6 @@ const SpoofControl = ({
     <Style style={style}>
       {type == 'button' &&
         <Button 
-          className="_button"
           content={isSpoof ? 'spoof: off' : 'spoof: on'} 
           size='mini' 
           loading={loading}

@@ -30,7 +30,6 @@ const ScanControl = ({
         size={size} 
         loading={loading || beingPortscanned}
         disabled={loading || isScanning}
-        style={ size=='mini' && {padding: '4px 6px'} || {}}
         onClick={e => scan({ variables: {ip} })} 
       />
       { data && 

@@ -28,7 +28,7 @@ const get = (url) => new Promise((res, rej) => {
   https.get(url, resp => {
     if (resp.statusCode != 200) {
       const err = `feeds.get failed, status ${resp.statusCode} ${url}`;
-      console.log(err);
+      l.error(err);
       rej(err);
     } else {    
       resp.on('data', chunk => data += chunk);
@@ -89,7 +89,7 @@ const processFeedList = (feeds) => {
         frequency: f.frequency,
         datatype: f.datatype,
         lastupdate: f.lastupdate
-      }, state.feeds[f.type]);
+      }, state.feeds[f.type], { ignore: {} });
     } else {
       state.feeds[f.type] = _.defaults(f, { id: f.type, active: false });
     }
@@ -204,7 +204,23 @@ let refreshFeedsLoopInterval = null;
 module.exports = {};
 
 module.exports.getIps = () => state.ips;
+module.exports.checkIp = ip => {
+  const match = state.ips[ip];
+  if (match) { 
+    const ignored = state.feeds[match.feed].ignore[ip];
+    if (!ignored) return match;
+  }
+  return null;
+}
 module.exports.getDomains = () => state.domains;
+module.exports.checkDomain = dom => {
+  const match = state.domains[dom];
+  if (match) { 
+    const ignored = state.feeds[match.feed].ignore[dom];
+    if (!ignored) return match;
+  }
+  return null;
+}
 
 module.exports.init = () => {
   return loadFeedsState()
@@ -240,6 +256,21 @@ module.exports.forceFeedUpdate = (id) => {
   if (!exists) return { error: `feed ${id} does not exist` };
   if (exists && !active) return { error: `cannot update inactive feed ${id}` };
   addThreatsById(id);
-}
+};
+
+module.exports.ignoreFeedRule = rule => {
+  const feedId = rule.feed;
+  const ruleId = rule.domain || rule.ipv4;
+  if (!feedId || !ruleId) {
+    l.error(`feeds.ignoreFeedRule missing feedId or ruleId for ${JSON.stringify(rule)}`);
+    return;
+  }
+  _.set(state, ['feeds', feedId, 'ignore', ruleId], new Date());
+  saveFeedsState();
+};
+
+
+
+
 
 

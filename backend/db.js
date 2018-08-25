@@ -47,6 +47,9 @@ db.remoteHosts.ensureIndex({ fieldName: 'latestHit' },
     e => e && l.error(`db.js problem indexing remoteHosts.db (latestHit) : ${'\n'+e.stack}`));
 db.alerts.ensureIndex({ fieldName: 'time' },
     e => e && l.error(`dbjs problem indexing alerts.db (time) : ${'\n'+e.stack}`));
+db.alerts.ensureIndex({ fieldName: 'archive' },
+    e => e && l.error(`dbjs problem indexing alerts.db (archive) : ${'\n'+e.stack}`));
+
 
 // data manipulation
 function makeLocalIp(d) {
@@ -312,7 +315,7 @@ module.exports.addAlert = (raw) => new Promise((res, rej) => {
 });
 
 module.exports.getAlerts = (deviceFilter, ipFilter, hostFilter) => new Promise((res, rej) => {
-  db.alerts.find({}, {})
+  db.alerts.find({ $not: { archive: true } }, {})
     .sort({ time: -1 })
     .limit(100)
     .exec((e, ds) => {
@@ -323,10 +326,36 @@ module.exports.getAlerts = (deviceFilter, ipFilter, hostFilter) => new Promise((
     })
 });
 
-//db.remoteHosts.update({}, { $unset: { hits: true, hitsSum: true } }, { multi: true }, (a,b) => console.log('$unset',a,b));
+module.exports.archiveAlert = id => new Promise((res, rej) => {
+  db.alerts.update(
+    { _id: id }, 
+    { $set: { archive: true, archiveTime: new Date() } }, 
+    { returnUpdatedDocs: true, multi: false },
+    (e, c, d) => res(d)
+  );
+});
 
+module.exports.ignoreAlert = id => new Promise((res, rej) => {
+  db.alerts.findOne({ _id: id }, {}, (e, d) => {
+    e && rej(e);
+    if (d) {
+      const delSearch = {};
+      d.domainThreat && (delSearch['domainThreat.domain'] = d.domainThreat.domain);
+      d.ipThreat && (delSearch['ipThreat.ipv4'] = d.ipThreat.ipv4);
+      deleteAlerts(delSearch).then(() => res(d.domainThreat || d.ipThreat));
+    }
+  })
+});
 
-
+const deleteAlerts = module.exports.deleteAlerts = search => new Promise((res, rej) => {
+  db.alerts.remove(search, { multi: true }, (e, c) => {
+    e && rej(e);
+    if (_.isNumber(c)) {
+      l.info(`db.deleteAlerts ${JSON.stringify(search)} deleted ${c} alerts`);
+      res(c);
+    }
+  });
+});
 
 
 

@@ -1,5 +1,6 @@
 const _ = require('lodash');
 
+const l = require('./log');
 const { isStringIp } = require('./f');
 const db = require('./db');
 const feeds = require('./feeds');
@@ -36,8 +37,8 @@ module.exports.catchThreats = eventGroup => new Promise((res, rej) => {
     .find(z => z);
 
   const ips = extractIps(eventGroup);
-  const ipThreat = ips.map(ip => feeds.getIps()[ip]).filter(x => x)[0];
-  const domainThreat = feeds.getDomains()[host];
+  const ipThreat = ips.map(ip => feeds.checkIp(ip)).filter(x => x)[0];
+  const domainThreat = feeds.checkDomain(host);
   
   (domainThreat || ipThreat) && bufferThreat({
     key: mac + (ipThreat&&ipThreat.ipv4 || host),
@@ -77,5 +78,6 @@ module.exports.catchDomainThreats = eventGroup => new Promise((res, rej) => {
 });
 
 const addThreatFeedAlert = alert => {
+  l.info(`alerts.addThreatFeedAlert ${alert.mac} ip ${alert.ip} domain ${alert.domain}`);
   return db.addAlert(alert);
 };

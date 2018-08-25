@@ -4,10 +4,11 @@ import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import { Query, Mutation } from 'react-apollo';
 import styled from 'styled-components';
-import { Checkbox, Icon, Loader } from 'semantic-ui-react'
+import { Checkbox, Icon, Loader, Popup } from 'semantic-ui-react';
 
 import { THREAT_FEEDS, ACTIVATE_THREAT_FEED } from './gql';
 import Value from './Value';
+import { gray, blue, orange } from '../colors';
 
 const Style = styled.div`
   display: flex;
@@ -29,6 +30,27 @@ const FeedStyle = styled.div`
     font-size: 0.8em;
     line-height: 1.3em;
     margin-left: 25px;
+  }
+  .feedError {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tags {
+    .type, .rules {
+      display: inline-block;
+      color: white;
+      padding: 0.0em 0.5em;
+      border-radius: 0.7em;
+      font-size: 0.8em;
+      margin-right: 0.3em;
+    }
+    .type {
+      background: ${gray.lighten(0.3)};
+    }
+    .rules {
+      background: ${blue};
+    }
   }
 `;
 
@@ -73,16 +95,44 @@ const Feeds = p => (
 
 const Feed = p => (
   <FeedStyle>
-    <div><Activate id={p.id} active={p.active} label={p.description} disabled={p.processing}/></div>
+    <div>
+      <Activate id={p.id} active={p.active} label={p.description} disabled={p.processing}/>
+    </div>
     <div className='sub'>
       {p.processing && <div><Loader size='mini' inline active /> processing...</div>}
-      {p.active && p.error && <div><Icon name='warning circle'/> {p.error}</div>}
-      {!p.active && <div>isc.sans lastupdate: {moment(p.lastupdate).format('M/D k:mm')}</div>}
-      {p.active && p.lastPull && <div>last pull: {moment(p.lastPull).format('M/D k:mm')}</div>}
-      {p.active && !p.processing && <div><b>active rules: {p.rulesCount}</b></div>}
+      <Tags {...p} />
+      <FeedError {...p} />
+      {!p.active && <div>isc.sans lastupdate {moment(p.lastupdate).format('M/D k:mm')}</div>}
+      {p.active && p.lastPull && <div>last pull {moment(p.lastPull).format('M/D k:mm')}</div>}
+      <Ignored {...p} />
     </div>
   </FeedStyle>
-)
+);
+
+const FeedError = p => (
+  p.active && p.error && 
+  <Popup
+    trigger={
+      <div className='feedError'>
+        <Icon name='warning circle'/>{p.error}
+      </div>
+    }
+    content={<div><Icon name='warning circle'/>{p.error}</div>}
+  />||null
+);
+
+const Tags = p => (
+  <div className='tags'>
+    <span className='type'>{p.datatype == 'is_ipv4' && 'ips' || 'domains'}</span>
+    {p.active && !p.processing && <span className='rules'><b>{p.rulesCount}</b> rules</span>}
+  </div>
+);
+
+const Ignored = p => p.ignored.length > 0 && 
+  <Popup 
+    trigger={<b>{p.ignored.length} ignored rules</b>}
+    content={<div>{p.ignored.map(x => <div key={x}>{x}</div>)}</div>}
+  /> || null;
 
 const Activate = ({active, id, label, disabled}) => (
   <Mutation mutation={ACTIVATE_THREAT_FEED} >

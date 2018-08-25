@@ -121,9 +121,10 @@ let schema = buildSchema(`
     processing: Boolean
     error: String
     lastPull: Date
+    ignored: [String]
   }
   type ThreatRule {
-    ip: String
+    ipv4: String
     domain: String
     date: Date
     lastSeen: Date
@@ -174,6 +175,7 @@ let schema = buildSchema(`
     deployBro: BroStatus,
     nameDevice(mac: String!, name: String!): DeviceResult
     activateThreatFeed(id: String!, active: Boolean!): [Feed]
+    alertAction(id: String!, action: String!): [Alert]
   }
 
 `);
@@ -225,7 +227,13 @@ function populateHostDevices(h) {
 }
 
 function feedsToGql(fs) {
-  return fs.map(f => _.set(f, 'lastPull', f.lastPull && new Date(f.lastPull) || null));
+  return fs.map(feedToGql);
+}
+
+function feedToGql(f) {
+  let mod = _.set(f, 'lastPull', f.lastPull && new Date(f.lastPull) || null);
+  mod.ignored = _.keys(mod.ignore||{});
+  return mod;
 }
 
 function login({user, pass}, {session}) {
@@ -310,6 +318,12 @@ let root = {
       .then(d => ({ device: d }))
       .catch(e => ({ error: e })),
   activateThreatFeed: ({id, active}) => feeds.activateFeed(id, active),
+  alertAction: ({id, action}) => ({
+    'ignore': id => db.ignoreAlert(id)
+      .then(feeds.ignoreFeedRule),
+    'archive': db.archiveAlert,
+    'delete': db.deleteAlert,
+  })[action](id).then(() => db.getAlerts().then(alertsToGql)),
 };
 module.exports = expressGraphql({
   schema: schema,
