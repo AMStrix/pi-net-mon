@@ -103,11 +103,11 @@ const Feed = p => (
     </div>
     <div className='sub'>
       {p.processing && <div><Loader size='mini' inline active /> processing...</div>}
-      <Tags {...p} />
       <FeedError {...p} />
       {!p.active && <div>isc.sans lastupdate {moment(p.lastupdate).format('M/D k:mm')}</div>}
       {p.active && p.lastPull && <div>last pull {moment(p.lastPull).format('M/D k:mm')}</div>}
       <Ignored {...p} />
+      <Tags {...p} />
     </div>
   </FeedStyle>
 );
