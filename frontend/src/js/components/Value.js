@@ -31,9 +31,9 @@ const Label = styled.div`
 `;
 
 const Value = p => {
-  const {label, value} = p;
+  const {label, value, trailing} = p;
   return (<Style {...p}>
-    {!_.isObject(value) && <Item {...p}>{value}</Item> || value}
+    {!_.isObject(value) && <Item {...p}>{value}{trailing}</Item> || value}
     {label&&<Label {...p}>{label}</Label>}
   </Style>);
 }

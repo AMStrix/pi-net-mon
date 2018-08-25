@@ -10,6 +10,7 @@ import { REMOTE_HOST } from './gql';
 import { lightBlue, grayText } from '../colors';
 import Value from './Value';
 import HostDeviceChart from './HostDeviceChart';
+import Research from './Research';
 
 const Style = styled.div`
   margin: 8px 8px 0 8px;
@@ -36,7 +37,7 @@ const research = [
 
 const Host = ({match:{params:{host}}}) => (
   <Style>
-    <Value inline label='host' value={host} />
+    <Value inline label='host' value={host} trailing={<Research type='domain' host={host} />} />
     <Query query={REMOTE_HOST} variables={{ host: host }} >
       {({loading, error, data}) => {
         if (loading) return 'Loading...';
@@ -52,14 +53,6 @@ const Host = ({match:{params:{host}}}) => (
                 value={remoteHost.sources.join(', ')}
               />
             </div>
-            <Value small label='research'
-              value={ research.map(r => (
-                  <div key={r.url()}>
-                    <Icon name='flask' />
-                    <a href={r.url(host)} target="_">{r.name}</a>
-                  </div>
-              ))}
-            />
             <Value small label='devices'
               value={
                 <div>
@@ -70,7 +63,9 @@ const Host = ({match:{params:{host}}}) => (
               }
             />
             {remoteHost.assocHosts && <Value small label='associated'
-              value={<div>{remoteHost.assocHosts.map(x => <div key={x} >{x}</div>)}</div>}
+              value={<div>{remoteHost.assocHosts.map(x => 
+                <div key={x} >{x} <Research type='ip' host={x} position='right center' /></div>
+              )}</div>}
             />}
             <HostDeviceChart host={host} devices={remoteHost.devices} />
           </div>

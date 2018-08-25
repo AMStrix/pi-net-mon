@@ -8,6 +8,7 @@ import moment from 'moment';
 import Seen from './Seen';
 import { green, gray, orange, level } from '../colors';
 import { ALERTS, ALERT_ACTION } from './gql';
+import Research from './Research';
 
 const Style = styled.div`
   position: relative;
@@ -94,7 +95,10 @@ const Deets = p => (
     <Icon name='long arrow alternate right' />
     {p.domainThreat && 
       <Link to={'/hosts/' + p.domain}>{p.domain}</Link> ||
-      p.ip
+      <span onClick={e => e.stopPropagation()}>
+        {p.ip}<Research type='ip' host={p.ip} position='right center' />
+        {p.domain && <Link to={'/hosts/' + p.domain}>({p.domain})</Link>}
+      </span>
     }
   </DeetsStyle>
 );
@@ -107,7 +111,7 @@ const threatFeedType = alert =>
   (alert.domainThreat && 'domain') ||
   (alert.ipThreat && 'ip') ||
   null;
-const getThreatDesc = alert => `Threat feed ${threatFeedType(alert)} rule match`;
+const getThreatDesc = alert => <span>Threat feed <b>{threatFeedType(alert)}</b> rule match</span>;
 const Desc = p => {
   if (p.type == 'threatFeedMatch') {
     return <div>{getThreatDesc(p)} from <b>{getFeedDesc(p)}</b></div>;
