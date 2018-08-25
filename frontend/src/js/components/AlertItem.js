@@ -9,6 +9,7 @@ import Seen from './Seen';
 import { green, gray, orange, level } from '../colors';
 import { ALERTS, ALERT_ACTION } from './gql';
 import Research from './Research';
+import ModalConfirm from './ModalConfirm';
 
 const Style = styled.div`
   position: relative;
@@ -126,32 +127,37 @@ const Dot = ({level}) => (
 );
 
 
-const alertActionUpdate = (cache, { data }) => {
-  const query = cache.readQuery({ query: ALERTS });
-  query.alerts = data.alertAction;
-  cache.writeQuery({ query: ALERTS , data: query });
-}
+// const alertActionUpdate = (cache, { data }) => {
+//   const query = cache.readQuery({ query: ALERTS });
+//   query.alerts = data.alertAction;
+//   cache.writeQuery({ query: ALERTS , data: query });
+// }
 const Controls = p => (
-    <Mutation mutation={ALERT_ACTION} update={alertActionUpdate} >
+    <Mutation mutation={ALERT_ACTION} update={() => p.refetchAlerts()} >
       {(alertAction, { data, loading }) => (
         <ControlsStyle className='controls' onClick={e => e.stopPropagation()}>
-          <Button 
+          {!p.archive && <Button 
             content='archive'
             size='mini' 
             onClick={() => alertAction({ variables: { id: p.id, action: 'archive'}})}
             disabled={loading}
-          />
+          />}
           <Button 
             content='delete'
             size='mini' 
             onClick={() => alertAction({ variables: { id: p.id, action: 'delete'}})}
             disabled={loading}
           />
-          <Button 
-            content='ignore'
-            size='mini' 
-            onClick={() => alertAction({ variables: { id: p.id, action: 'ignore'}})}
-            disabled={loading}
+          <ModalConfirm
+            buttonContent='ignore'
+            buttonSize='mini'
+            buttonDisabled={loading}
+            headerContent='Ignore threat rule'
+            content={<div>
+              <p>Ignore this rule in the future, and delete associated alerts?</p>
+              <p><b>{getFeedDesc(p)}</b> {threatFeedType(p)} rule <b>{p.ipThreat ? p.ip : p.domain}</b></p>
+            </div>}
+            onConfirm={() => alertAction({ variables: { id: p.id, action: 'ignore'}})}
           />
         </ControlsStyle>
       )}

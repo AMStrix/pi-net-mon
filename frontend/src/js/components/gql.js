@@ -241,6 +241,7 @@ export const FULL_THREAT_RULE = gql`
 export const FULL_ALERT = gql`
   fragment FullAlert on Alert {
       id
+      archive
       time
       type
       level
@@ -256,8 +257,8 @@ export const FULL_ALERT = gql`
 `;
 
 export const ALERTS = gql`
-  query alerts {
-    alerts { ...FullAlert }
+  query alerts($archived: Boolean) {
+    alerts(archived: $archived) { ...FullAlert }
   }
   ${FULL_ALERT}
 `;
@@ -269,6 +270,12 @@ export const ALERT_ACTION = gql`
     }
   }
   ${FULL_ALERT}
+`;
+
+export const ALERT_COUNT = gql`
+  query alertCount($level: Int!) {
+    alertCount(level: $level)
+  }
 `;
 
 
