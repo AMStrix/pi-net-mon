@@ -205,20 +205,19 @@ function deviceToGql(d) {
 }
 
 function hostsToGql(hs) {
-  hs.forEach(hostToGql);
-  return hs;
+  return Promise.all(hs.map(hostToGql));
 }
 
 function hostToGql(h) {
-  h.id = h.host;
-  return h;
+  return db.macToName(h.latestMac)
+    .then(n => _.defaults(h, { id: h.host, latestDeviceName: n }));
 }
 
 function alertsToGql(alerts) {
-  return alerts.map(a => {
-    a.id = a._id;
-    return a;
-  });
+  const withId = alerts.map(a => _.set(a, 'id', a._id));
+  return Promise.all(withId.map(a => 
+    db.macToName(a.mac).then(name => _.set(a, 'deviceName', name))
+  ));
 }
 
 function populateHostDevices(h) {

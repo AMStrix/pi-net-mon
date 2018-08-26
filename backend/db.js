@@ -209,7 +209,7 @@ module.exports.ipToMac = f.memoizePeriodic(ip => new Promise((res, rej) =>
   })
 ));
 
-const macToName = module.exports.macToName = f.memoizePeriodic(mac => new Promise((res, rej) => 
+module.exports.macToName = f.memoizePeriodic(mac => new Promise((res, rej) => 
   db.devices.findOne({ 'mac': mac }, { name: 1 }, (err, d) => {
     err && (console.log(`macToName(${mac}) error: `, err));
     d ? res(d.name) : res();
@@ -292,12 +292,7 @@ const getRemoteHosts = module.exports.getRemoteHosts = (sortField, sortDir, skip
     .sort(sort)
     .skip(skip||0)
     .limit(limit||30)
-    .exec((e, ds) => {
-      e && console.log('getRemoteHosts() error', e);
-      Promise.all(ds.map(d => 
-        macToName(d.latestMac).then(n => _.set(d, 'latestDeviceName', n))
-      )).then(res);
-    })
+    .exec((e, ds) => e && rej(e) || res(ds));
 });
 
 module.exports.getRemoteHost = h => new Promise((res, rej) => {
@@ -322,12 +317,7 @@ module.exports.getAlerts = (archived, deviceFilter, ipFilter, hostFilter) =>
     db.alerts.find(search)
       .sort({ time: -1 })
       .limit(100)
-      .exec((e, ds) => {
-        e && l.error(`db.getAlerts error ${e}`);
-        Promise.all(ds.map(d => 
-          macToName(d.mac).then(n => _.set(d, 'deviceName', n))
-        )).then(res);
-      })
+      .exec((e, ds) => e && rej(e) || res(ds));
   });
 
 module.exports.alertCount = level => new Promise((res, rej) => {
@@ -341,7 +331,7 @@ module.exports.archiveAlert = id => new Promise((res, rej) => {
     { _id: id }, 
     { $set: { archive: true, archiveTime: new Date() } }, 
     { returnUpdatedDocs: true, multi: false },
-    (e, c, d) => res(d)
+    (e, c, d) => e && rej(e) || res(d)
   );
 });
 
@@ -370,4 +360,5 @@ const deleteAlerts = module.exports.deleteAlerts = search => new Promise((res, r
 });
 
 
-
+// db.alerts.update({}, { $unset: { deviceName: true }}, { multi: true }, console.log);
+// db.remoteHosts.update({}, { $unset: { latestDeviceName: true }}, { multi: true }, console.log);
