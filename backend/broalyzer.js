@@ -232,7 +232,7 @@ broHandlers.dns = group => {
   if (port == 53 && host) {
     l.verbose(`bro dns > ${origIp}/${mac} ${host} (${respIp})`);
     return Promise.all(ips.map(ip => db.addIpToHost(ip, host, time)))
-      .then(() => updateTree(mac, origIp, host, time, 'dns', uid))
+      .then(() => updateTree(tree, mac, origIp, host, time, 'dns', uid))
       .then(() => updateDb(mac, origIp, host, time, 'dns'));
   }
   return Promise.resolve();
@@ -248,7 +248,7 @@ broHandlers.http = group => {
       l.info(`XXXXXXXXXXXXXX broalyzer.http no host for ${respIp}/${host} ${uid} ${e}`)
       return respIp; // fallback to response ip
     })
-    .then(h => updateTree(mac, origIp, h, time, 'http', uid).then(() => h))
+    .then(h => updateTree(tree, mac, origIp, h, time, 'http', uid).then(() => h))
     .then(h => updateDb(mac, origIp, h, time, 'http', respIp).then(() => h));
 };
 
@@ -262,7 +262,7 @@ broHandlers.ssl = group => {
       l.info(`XXXXXXXXXXXXXX broalyzer.ssl no host for ${respIp}/${host} ${uid} ${e}`)
       return respIp; // fallback to response ip
     })
-    .then(h => updateTree(mac, origIp, h, time, 'ssl', uid).then(() => h))
+    .then(h => updateTree(tree, mac, origIp, h, time, 'ssl', uid).then(() => h))
     .then(h => updateDb(mac, origIp, h, time, 'ssl', respIp).then(() => h));
 };
 
@@ -303,7 +303,7 @@ const makeHrPath = d =>
 const makeDayPath = d =>
   `y${d.getUTCFullYear()}.m${d.getUTCMonth()}.d${d.getUTCDate()}`;
 
-const updateTree = (mac, ip, host, date, source, uid) => new Promise((res, rej) => {
+const updateTree = module.exports.updateTree = (tree, mac, ip, host, date, source, uid) => new Promise((res, rej) => {
   // time
   const hrNode = setGetPath(tree, makeHrPath(date), { host: {}, device: {} });
 
@@ -455,26 +455,28 @@ function saveTreeHrArchive() {
   });
 }
 
-function loadTreeHrArchive() {
+const loadTreeHrArchive = () => new Promise((res, rej) => {
   const nowms = Date.now();
   const paths = _.range(1, 24).map(hr => makeHrPath(hoursAgo(hr, nowms)));
+  const unzipPromises = [];
   const processLine = line => {
     const {snapshotTime, snapshotPath, snapshotSubtree} = JSON.parse(line);
     if (paths.indexOf(snapshotPath) > -1) {
-      gunzipFromB64(snapshotSubtree)
+      const uzp = gunzipFromB64(snapshotSubtree)
         .then(unzipped => {
           const size = filesize(Buffer.byteLength(unzipped));
           l.info(`broalyzer.loadTreeHrArchive for ${snapshotPath} (${size})`);
           return unzipped;
         })
         .then(unzipped => _.set(tree, snapshotPath, JSON.parse(unzipped)));
+      unzipPromises.push(uzp);
     } else {
       reader.destroy();
+      Promise.all(unzipPromises).then(() => res());
     }
   }
   const reader = fsr('data/archive.hr.tree').on('data', processLine);
-}
-loadTreeHrArchive();
+});
 
 function arborist() {
   saveTreeHrSnapshot();
@@ -485,7 +487,9 @@ function arborist() {
 let watchEventsByUidBufferIntervalId = null;
 let arboristIntervalId = null;
 const init = module.exports.init = () => {
-  return loadTreeHrSnapshot()
+
+  return loadTreeHrArchive()
+    .then(loadTreeHrSnapshot)
     .then(() => {
       !arboristIntervalId && (arboristIntervalId = setInterval(arborist, 30000));
     })
