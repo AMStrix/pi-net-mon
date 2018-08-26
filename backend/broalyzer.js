@@ -487,7 +487,6 @@ function arborist() {
 let watchEventsByUidBufferIntervalId = null;
 let arboristIntervalId = null;
 const init = module.exports.init = () => {
-
   return loadTreeHrArchive()
     .then(loadTreeHrSnapshot)
     .then(() => {
