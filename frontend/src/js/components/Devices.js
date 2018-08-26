@@ -48,9 +48,13 @@ const Devices = ({ match: { url }}) => (
       path={url} 
       exact={true} 
       render={() => (
-        <Query query={DEVICES} pollInterval={5000}>
+        <Query 
+          query={DEVICES} 
+          pollInterval={5000}
+          fetchPolicy='cache-and-network'
+        >
           {({ loading, error, data }) => {
-            if (loading) return "Loading...";
+            if (!data.devices && loading) return "Loading...";
             if (error) return `Error! ${error.message}`;
             let sorted = _.sortBy(data.devices, ['name']).reverse();
             sorted = _.sortBy(sorted, ['latestIp.seen']).reverse();

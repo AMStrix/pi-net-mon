@@ -83,7 +83,7 @@ class DeviceItem extends Component {
         <Top>
           <div><Status {...p} /> {p.name || p.mac}</div>
           <div>{ip.ip} <Ports {...p} /></div>
-          <div className='last'><Seen when={ip.seen} size='smaller' tip='last time seen on network' /></div>
+          <div className='last'><Seen when={ip.seen} size='smaller' /></div>
         </Top>
         <div className='sub'>
           <Vendor {...p} />

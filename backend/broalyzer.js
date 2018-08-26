@@ -99,11 +99,6 @@ const broLineHandler = () => {
 };
 
 const processBroResultsByUid = async byUid => {
-  // let countByBroType = _.values(byUid).reduce((counts, arr) => {
-  //   const k = arr.reduce((a,x) => a + '-' + x.broType, '');
-  //   counts[k] ? counts[k]++ : counts[k] = 1; 
-  //   return counts;
-  // }, {});
   const byUidArr = _.values(byUid);
   l.info('processBroResultsByUid byUidArr.length: '+byUidArr.length);
   let progress = 0;
@@ -115,8 +110,6 @@ const processBroResultsByUid = async byUid => {
     await processBroResultByUid(byUidArr[i]);
     progress++;
   }
-  //console.log(JSON.stringify(r, null, 4));
-  console.log(`max: ${durationMax}, avg: ${durationTotal/durationCount}`)
   saveTree();
 };
 
@@ -174,7 +167,7 @@ module.exports.handleBroEvent = (source, event) => {
 
 function watchEventsByUidBuffer() {
   _.values(eventsByUid).forEach((events) => {
-    // here we assume all bro events with same uid happen within given duration
+    // here we assume all bro events with same uid happen within given duration & have > 0 conns
     const {uid, broType, service, proto, buffAt} = events[0];
     const hasConn = _.find(events, { broType: 'conn' });
     if (Date.now() - buffAt > 5000 && hasConn) {
@@ -283,7 +276,11 @@ const updateDb = (mac, ip, host, date, source, hostIp) =>
     protocol: null,
     service: null,
     mac: mac
-  });
+  }).then(() => db.updateDevice({ 
+    mac: mac, 
+    ip: ip,
+    seen: date 
+  }));
 
 
 const tree = {};
