@@ -168,15 +168,6 @@ function portScan(forcedIp) {
   });
 }
 
-
-function spoofInit() {
-  //f.cliSync('echo', ['1','>','/proc/sys/net/ipv4/ip_forward'])
-  f.cliSync('sysctl', ['-w', 'net.ipv4.ip_forward=1']);
-  if (process.getuid() !== 0) {
-    throw new Error('spoofInit: Must be run as root!');
-  }
-}
-
 function spoofable(mac, ip) {
   return ip !== thisIp() && ip !== thisGateway() && !spoofing[mac];
 }
@@ -268,7 +259,7 @@ module.exports = {};
 
 module.exports.state = state;
 
-module.exports.start = () => {
+const start = () => {
   if (running) return;
   running = true;
   updateState();
@@ -297,7 +288,15 @@ module.exports.spoofDevice = (mac, isSpoof) => db.getDevice(mac)
 
 module.exports.onExit = cleanupArpSpoof;
 
-spoofInit();
+module.exports.init = () => {
+  f.cliSync('sysctl', ['-w', 'net.ipv4.ip_forward=1']);
+  if (process.getuid() !== 0) {
+    return Promise.reject('spoofInit: Must be run as root!');
+  }
+  start();
+  return Promise.resolve();
+};
+
 
 // todo:
 // avahi-browse -atp --resolve (.local address finding)

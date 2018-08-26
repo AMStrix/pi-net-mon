@@ -14,8 +14,6 @@ const broalyzer = require('./broalyzer');
 const db = require('./db');
 const feeds = require('./feeds');
 
-spoof.start();
-
 let schema = buildSchema(`
   scalar Date
 

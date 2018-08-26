@@ -7,10 +7,13 @@ const l = require('./log');
 const broalyzer = require('./broalyzer');
 const spoof = require('./spoof');
 const feeds = require('./feeds');
+const db = require('./db');
 
 const app = express();
 
-broalyzer.init()
+db.init()
+  .then(spoof.init)
+  .then(broalyzer.init)
   .then(feeds.init)
   .then(init);
 

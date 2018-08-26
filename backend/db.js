@@ -8,48 +8,62 @@ const f = require('./f');
 
 const DBS = ['users', 'localIps', 'devices', 'remoteHosts', 'ipToHost', 'alerts'];
 
-const dbOnload = (name, e) => {
+let db = null;
+
+const dbOnload = (name, e, res, rej) => {
   if (!e) {
     l.info(`db.js loaded ${name}.db success`);
+    res();
   } else {
     l.error(`db.js problem loading ${name}.db : ${'\n'+e.stack}`);
-    throw e;
+    rej();
   }
 };
 
-const makeDb = name => 
-  new Nedb({
+const makeDb = name => {
+  let res, rej;
+  const promise = new Promise((resolve, reject) => {
+    res = resolve;
+    rej = reject;
+  });
+  const onload = e => dbOnload(name, e, res, rej);
+  const db =new Nedb({
     filename: `./data/${name}.db`,
     autoload: true,
-    onload: e => dbOnload(name, e)
+    onload: onload
   });
-
-const db = DBS.reduce((a, n) => (a[n] = makeDb(n)) && a, {});
-
-const INDEXES = {
-  users: 'username',
-  devices: 'mac',
-  localIps: 'ip',
-  remoteHosts: 'host',
-  ipToHost: 'ip'
+  return {name, db, onload, promise};
 };
 
-Object.keys(INDEXES).forEach(dbn => {
-  db[dbn].ensureIndex(
-    { fieldName: INDEXES[dbn], unique: true },
-    e => e && l.error(`db.js problem indexing ${dbn}.db : ${'\n'+e.stack}`)
-  );
-  db[dbn].persistence.setAutocompactionInterval(1000*60*30);
-  db[dbn].on('compaction.done', () =>  l.info(`db.js ${dbn} compaction done`));
-});
+const makeDatabases = () => {
+  l.info('db.makeDatabases initializing...');
+  const makeRes = DBS.map(makeDb);
+  const db = makeRes.reduce((a, x) => (a[x.name] = x.db) && a, {});
+  const onloadPromises = makeRes.map(x => x.promise);
+  const INDEXES = {
+    users: 'username',
+    devices: 'mac',
+    localIps: 'ip',
+    remoteHosts: 'host',
+    ipToHost: 'ip'
+  };
+  Object.keys(INDEXES).forEach(dbn => {
+    db[dbn].ensureIndex(
+      { fieldName: INDEXES[dbn], unique: true },
+      e => e && l.error(`db.js problem indexing ${dbn}.db : ${'\n'+e.stack}`)
+    );
+    db[dbn].persistence.setAutocompactionInterval(1000*60*30);
+    db[dbn].on('compaction.done', () =>  l.info(`db.js ${dbn} compaction done`));
+  });
+  db.remoteHosts.ensureIndex({ fieldName: 'latestHit' }, 
+      e => e && l.error(`db.js problem indexing remoteHosts.db (latestHit) : ${'\n'+e.stack}`));
+  db.alerts.ensureIndex({ fieldName: 'time' },
+      e => e && l.error(`dbjs problem indexing alerts.db (time) : ${'\n'+e.stack}`));
+  db.alerts.ensureIndex({ fieldName: 'archive' },
+      e => e && l.error(`dbjs problem indexing alerts.db (archive) : ${'\n'+e.stack}`));
 
-db.remoteHosts.ensureIndex({ fieldName: 'latestHit' }, 
-    e => e && l.error(`db.js problem indexing remoteHosts.db (latestHit) : ${'\n'+e.stack}`));
-db.alerts.ensureIndex({ fieldName: 'time' },
-    e => e && l.error(`dbjs problem indexing alerts.db (time) : ${'\n'+e.stack}`));
-db.alerts.ensureIndex({ fieldName: 'archive' },
-    e => e && l.error(`dbjs problem indexing alerts.db (archive) : ${'\n'+e.stack}`));
-
+  return Promise.all(onloadPromises).then(() => db);
+};
 
 // data manipulation
 function makeLocalIp(d) {
@@ -360,5 +374,9 @@ const deleteAlerts = module.exports.deleteAlerts = search => new Promise((res, r
 });
 
 
+module.exports.init = () => makeDatabases()
+  .then(initializedDb => {
+    db = initializedDb;
+  });
 // db.alerts.update({}, { $unset: { deviceName: true }}, { multi: true }, console.log);
 // db.remoteHosts.update({}, { $unset: { latestDeviceName: true }}, { multi: true }, console.log);
