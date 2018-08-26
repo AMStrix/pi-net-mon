@@ -111,41 +111,6 @@ describe('ymdh', () => {
   });
 });
 
-describe('dateToArray', () => {
-  it('should return array of UTC year, month & day', () => {
-    const date = new Date('2017-11-25T12:34:56.000Z');
-    const arr = [2017, 10, 25]; // months 0 indexed
-    expect(f.dateToArray(date)).toEqual(arr);
-  })
-});
-
-describe('makeDatePath', () => {
-  const date = new Date('2017-11-25T12:34:56.000Z');
-  const path = 'hits.y2017.m10.d25'; // months 0 indexed
-  expect(f.makeDatePath(date)).toEqual(path);
-});
-
-describe('makeHitsByDateSearch', () => {
-  it('generates serach for from and to dates', () => {
-    const from = new Date('2017-11-25T12:34:56.000Z');
-    const to = new Date('2017-11-26T12:34:56.000Z');
-    const res = {
-      find: {
-        $or: [
-          {'hits.y2017.m10.d25': { $exists: true }},
-          {'hits.y2017.m10.d26': { $exists: true }}
-        ]
-      },
-      proj: {
-        'hits.y2017.m10.d25': 1,
-        'hits.y2017.m10.d26': 1,
-        host: 1
-      }
-    };
-    expect(f.makeHitsByDateSearch(from, to)).toEqual(res);
-  });
-});
-
 
 
 
