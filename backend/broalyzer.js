@@ -291,6 +291,11 @@ const setGetPath = (r, p, def) => {
   if (!exist) {
     _.set(r, p, def); // NE, init
     ret = def; // tag it
+  } else {
+    _.transform(ret, (a, v, k) => {
+      _.isNumber(v) && (ret[k] += def[k]);
+      _.isArray(v) && (ret[k] = ret[k].concat(def[k]));
+    });
   }
   return ret;
 };
@@ -308,31 +313,22 @@ const updateTree = module.exports.updateTree = (tree, mac, ip, host, date, sourc
   const hrNode = setGetPath(tree, makeHrPath(date), { host: {}, device: {} });
 
   // time - host
-  const hostNode = hrNode.host[host] = hrNode.host[host] || { hits: 0 };
-  hostNode.hits++;
+  const hostNode = setGetPath(hrNode, ['host', host], { hits: 1 });
 
   // time - host - dev
-  const hostDevNode = setGetPath(hostNode, 'device.'+mac, { uids: [], hits: 0 });
-  hostDevNode.hits++;
-  hostDevNode.uids.push(uid);
+  const hostDevNode = setGetPath(hostNode, ['device', mac], { uids: [uid], hits: 1 });
 
   // time - host - dev - source
-  const hostDevSourceNode = setGetPath(hostDevNode, 'source.'+source, { hits: 0 });
-  hostDevSourceNode.hits++;
+  const hostDevSourceNode = setGetPath(hostDevNode, ['source', source], { hits: 1 });
 
   // time - dev
-  const devNode = hrNode.device[mac] = hrNode.device[mac] || { hits: 0 };
-  devNode.hits++;
+  const devNode = setGetPath(hrNode, ['device', mac], { hits: 1 });
 
   // time - dev - host 
-  const devHostNodeParent = setGetPath(devNode, 'host', {}); // hosts have dots, so extra step
-  const devHostNode = devHostNodeParent[host] = devHostNodeParent[host] || { uids: [], hits: 0 };
-  devHostNode.hits++;
-  devHostNode.uids.push(uid);
+  const devHostNode = setGetPath(devNode, ['host', host], { uids: [uid], hits: 1 });
 
   // time - dev - host - source
-  const devHostSourceNode = setGetPath(devHostNode, 'source.'+source, { hits: 0 });
-  devHostSourceNode.hits++;
+  const devHostSourceNode = setGetPath(devHostNode, ['source', source], { hits: 1 });
 
   res();
 });
