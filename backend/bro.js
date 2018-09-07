@@ -20,7 +20,7 @@ const state = {
 let deploying = false;
 
 function init() {
-  cmdDeploy()
+  return cmdDeploy()
     .then(() => watchLogs());
 }
 
@@ -113,4 +113,4 @@ module.exports.deploy = () => new Promise((res, rej) => {
   res(state);
 });
 
-init();
+module.exports.init = init;

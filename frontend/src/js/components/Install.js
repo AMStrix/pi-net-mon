@@ -27,6 +27,7 @@ class Install extends Component {
     let stepAdmin = !this.props.hasAdmin;
     let stepBro = !stepAdmin && !this.props.hasBro;
     let url = this.props.match.url;
+    const curPath = this.props.location.pathname;
     return (
       <Wrapper>
         <Liner>
@@ -52,7 +53,7 @@ class Install extends Component {
             </Step.Group>
             <Segment attached='bottom'>
               <Switch>
-                { !stepAdmin && stepBro && <Redirect to={url + '/bro'} /> }
+                { !stepAdmin && stepBro && curPath !== '/install/bro' && <Redirect to={url + '/bro'} /> }
                 { !stepAdmin && !stepBro && <Redirect to='/dashboard' /> }
                 <Route path={url + '/admin'} component={CreateAdmin} />
                 { stepAdmin && <Redirect to={url + '/admin'} /> }

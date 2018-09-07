@@ -244,7 +244,7 @@ broHandlers.http = group => {
   l.verbose(`bro http > ${origIp}/${mac} ${host} (${respIp})`);
   return (host ? db.addIpToHost(respIp, host, time) : Promise.resolve())
     .then(() => resolveHost(host, respIp))
-    .catch(() => {
+    .catch((e) => {
       l.info(`XXXXXXXXXXXXXX broalyzer.http no host for ${respIp}/${host} ${uid} ${e}`)
       return respIp; // fallback to response ip
     })
@@ -258,7 +258,7 @@ broHandlers.ssl = group => {
   l.verbose(`bro ssl > ${origIp}/${mac} ${host} (${respIp})`);
   return (host ? db.addIpToHost(respIp, host, time) : Promise.resolve())
     .then(() => resolveHost(host, respIp))
-    .catch(() => {
+    .catch((e) => {
       l.info(`XXXXXXXXXXXXXX broalyzer.ssl no host for ${respIp}/${host} ${uid} ${e}`)
       return respIp; // fallback to response ip
     })
@@ -471,7 +471,14 @@ const loadTreeHrArchive = () => new Promise((res, rej) => {
       Promise.all(unzipPromises).then(() => res());
     }
   }
-  const reader = fsr('data/archive.hr.tree').on('data', processLine);
+  const filename = 'data/archive.hr.tree';
+  let reader;
+  if (fs.existsSync(filename)) {
+    reader = fsr(filename).on('data', processLine);
+  } else {
+    l.info(`broalyzer.loadTreeHrArchive no archive found`);
+    res();
+  }
 });
 
 function arborist() {

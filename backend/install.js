@@ -80,6 +80,14 @@ const steps = [
     );
   }),
 
+  new InstallStep('Download bro', function() {
+    const uri = 'https://www.bro.org/downloads/bro-2.5.1.tar.gz';
+    return this.shex(
+      'mkdir -p bro && cd bro && sudo wget -nc -nv ' + uri,
+      'error downloading bro'
+    );
+  }),
+
   new InstallStep('Install GeoLiteCity database', function() {
     const uri = 'http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz';
     let cmd = `cd bro && wget -nc -nv ${uri} && gunzip -f GeoLiteCity.dat.gz && ` + 
@@ -92,14 +100,6 @@ const steps = [
     let cmd = `cd bro && wget -nc -nv ${uri} && gunzip -f GeoLiteCityv6.dat.gz && ` + 
               'sudo mv GeoLiteCityv6.dat /usr/share/GeoIP/GeoIPCityv6.dat';
     return this.shex(cmd, 'error installing geoip database');
-  }),
-
-  new InstallStep('Download bro', function() {
-    const uri = 'https://www.bro.org/downloads/bro-2.5.1.tar.gz';
-    return this.shex(
-      'mkdir -p bro && cd bro && sudo wget -nc -nv ' + uri,
-      'error downloading bro'
-    );
   }),
 
   new InstallStep('Extract bro', function() {
@@ -137,7 +137,7 @@ const steps = [
     );
   }),
 
-  new InstallStep('Configure bro to output json', function() {
+  new InstallStep('Configure bro to output MAC addresses', function() {
     return this.shex(
       'sudo bash -c \'echo "@load policy/protocols/conn/mac-logging" >> /opt/nsm/bro/share/bro/site/local.bro\'',
       'error writing mac-logging config to bro/site/local.bro'
@@ -156,6 +156,7 @@ function install() {
     isInstalling = true;
     promiseSerial(steps.map(s => s.exec))
       .then(x => {isInstalling = false})
+      .then(() => require('./server').finishInit())
       .catch(e => {isInstalling = false; console.log(e); });
   }
 }

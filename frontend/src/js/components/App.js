@@ -95,6 +95,6 @@ export default graphql(
   STATUS, 
   { 
     name: 'status', 
-    options: { /*pollInterval: 10000*/ }
+    options: { pollInterval: 10000 }
   }
 ) (App);

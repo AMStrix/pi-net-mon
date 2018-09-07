@@ -1,19 +1,19 @@
-const merge = require('webpack-merge');
-const common = require('./webpack.common.js');
+const merge = require("webpack-merge");
+const common = require("./webpack.common.js");
 
 module.exports = merge(common, {
-  mode: 'development',
-  devtool: 'inline-source-map',
+  mode: "development",
+  devtool: "inline-source-map",
   devServer: {
     historyApiFallback: {
-      disableDotRule: true,
-    }, 
+      disableDotRule: true
+    },
     proxy: {
-      '/graphql': {
+      "/graphql": {
         // onProxyReq: (preq, req, res) => {
         //   console.log(res);
         // },
-        target: 'http://pi-net-mon.local:4000',
+        target: "http://pi-net-mon.local:80",
         // changeOrigin: true,
         // secure: false,
         // cookieDomainRewrite: 'localhost',
