@@ -29,7 +29,7 @@ On macs, for example: `touch /Volumes/boot/ssh`
 localization options > change timezone > (select your timezone)  
 (optional, requires reboot) network options > Hostname > enter 'pi-net-mon' as hostname
 1. if you changed the hostname, then `ssh pi@pi-net-mon.local` password 'raspberry'
-1. Install NodeJS v8 & everything else (entire process will take sevarl hours):
+1. Install NodeJS v8 & everything else (entire process will take several hours):
 ```
 wget https://nodejs.org/dist/v8.11.3/node-v8.11.3-linux-armv7l.tar.xz
 tar xf node-v8.11.3-linux-armv7l.tar.xz
