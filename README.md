@@ -1,7 +1,7 @@
 ### pi-net-mon
 A lightweight network monitoring solution for RaspberryPI3.
 
-![pi-net-mon demo](https://amstrix.github.io/images/pi-net-mon_demo_0.gif)
+![pi-net-mon demo](https://amstrix.github.io/images/pi-net-mon_demo_1.gif)
 
 ### Features
 - show devices on network
