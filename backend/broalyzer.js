@@ -456,6 +456,7 @@ const loadTreeHrArchive = () => new Promise((res, rej) => {
   const paths = _.range(1, 24).map(hr => makeHrPath(hoursAgo(hr, nowms)));
   const unzipPromises = [];
   const processLine = line => {
+    if (!line) return;
     const {snapshotTime, snapshotPath, snapshotSubtree} = JSON.parse(line);
     if (paths.indexOf(snapshotPath) > -1) {
       const uzp = gunzipFromB64(snapshotSubtree)
@@ -468,13 +469,14 @@ const loadTreeHrArchive = () => new Promise((res, rej) => {
       unzipPromises.push(uzp);
     } else {
       reader.destroy();
-      Promise.all(unzipPromises).then(() => res());
     }
   }
   const filename = 'data/archive.hr.tree';
   let reader;
   if (fs.existsSync(filename)) {
-    reader = fsr(filename).on('data', processLine);
+    reader = fsr(filename)
+      .on('close', () => Promise.all(unzipPromises).then(res))
+      .on('data', processLine);
   } else {
     l.info(`broalyzer.loadTreeHrArchive no archive found`);
     res();

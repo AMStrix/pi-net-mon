@@ -190,6 +190,7 @@ async function createAdmin(user, pass) {
   let res;
   try {
     res = await db.createAdmin(user, pass);
+    hasBro().then(has => has && require('./server').finishInit());
     return null;
   } catch (e) {
     return 'DB error: ' + e.message;

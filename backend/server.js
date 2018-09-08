@@ -33,7 +33,9 @@ const finishInit = () => spoof.init()
   .then(feeds.init)
   .then(init);
 
+let serverRunning = false;
 function init() {
+  if ( serverRunning ) return;
   app.use(session);
   app.use((req, res, next) => {
     if (req.session.x) { req.session.x = req.session.x + 1; }
@@ -46,6 +48,7 @@ function init() {
     res.sendFile(path.resolve('../frontend/dist/index.html'));
   });
   app.listen(80, () => l.info('Server started on port 80'));
+  serverRunning = true;
 }
 
 function handleExit(signal) {
